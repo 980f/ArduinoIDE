@@ -1,3 +1,9 @@
+Forked to change:
+# UI: split vertically with wide screen so can watch build progress and read code.
+# reload when file added to directory, presently must restart the IDE.
+# tree list for picking device type.
+# multiple tabs or tab reorder for navigating between files, alpha doesn't cut it for me.
+
 Arduino
 ========
 
