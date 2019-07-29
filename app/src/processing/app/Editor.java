@@ -327,7 +327,8 @@ public class Editor extends JFrame implements RunnerListener {
     codePanel = new JPanel(new BorderLayout());
     upper.add(codePanel);
 
-    splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, upper, consolePanel);
+    final boolean horizontal= PreferencesData.getBoolean("editor.split.widescreen", false);//[980F]: I have a really wide screen ;)
+    splitPane = new JSplitPane(horizontal?JSplitPane.HORIZONTAL_SPLIT:JSplitPane.VERTICAL_SPLIT, upper, consolePanel);
 
     // repaint child panes while resizing
     splitPane.setContinuousLayout(true);
@@ -349,7 +350,9 @@ public class Editor extends JFrame implements RunnerListener {
 
     // the following changed from 600, 400 for netbooks
     // http://code.google.com/p/arduino/issues/detail?id=52
-    splitPane.setMinimumSize(scale(new Dimension(600, 100)));
+    splitPane.setMinimumSize(scale(new Dimension( //[980F]: remember the split
+        PreferencesData.getInteger("editor.split.width.min",600),
+        PreferencesData.getInteger("editor.split.height.min",100))));
     box.add(splitPane);
 
     // hopefully these are no longer needed w/ swing
