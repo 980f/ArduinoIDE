@@ -329,12 +329,19 @@ public class Editor extends JFrame implements RunnerListener {
 
     final boolean horizontal= PreferencesData.getBoolean("editor.split.widescreen", false);//[980F]: I have a really wide screen ;)
     splitPane = new JSplitPane(horizontal?JSplitPane.HORIZONTAL_SPLIT:JSplitPane.VERTICAL_SPLIT, upper, consolePanel);
+    if(horizontal) {//[980F] hiding this logic with my new flag, others may vote to make it apply to the other state as well.
+      defaultLocation[4] = storedLocation[4];//[980F] the split should be remembered even when screen is maximized, logic after here sees maxiixed and ignores the stored settings for split location.
+      //on the below: the screen management invokes a resize when the editor is made visible, and with the original 1.0 value that made the editor split location moot.
+      //perhaps we can make all these changes pertain only when the extended state (location[5]) is 'maximized'.
+      splitPane.setResizeWeight(PreferencesData.getFloat("editor.split.ratio",0.618F));//default value is for debug/traceability. A better one would be to compute the ratio when it was saved and restore that ratio. I am too lazy for that.
+    } else {
+      // if window increases in size, give all of increase to
+      // the textarea in the uppper pane
+      splitPane.setResizeWeight(1D);//this (1D) kills the setLocation call in setplacement, the divider location is then being set by the minimumsize.
+    }
 
     // repaint child panes while resizing
     splitPane.setContinuousLayout(true);
-    // if window increases in size, give all of increase to
-    // the textarea in the uppper pane
-    splitPane.setResizeWeight(1D);
 
     // to fix ugliness.. normally macosx java 1.3 puts an
     // ugly white border around this object, so turn it off.
@@ -350,9 +357,7 @@ public class Editor extends JFrame implements RunnerListener {
 
     // the following changed from 600, 400 for netbooks
     // http://code.google.com/p/arduino/issues/detail?id=52
-    splitPane.setMinimumSize(scale(new Dimension( //[980F]: remember the split
-        PreferencesData.getInteger("editor.split.width.min",600),
-        PreferencesData.getInteger("editor.split.height.min",100))));
+    splitPane.setMinimumSize(scale(new Dimension(600,100)));
     box.add(splitPane);
 
     // hopefully these are no longer needed w/ swing
@@ -460,7 +465,7 @@ public class Editor extends JFrame implements RunnerListener {
   private void setPlacement(int[] location) {
     setBounds(location[0], location[1], location[2], location[3]);
     if (location[4] != 0) {
-      splitPane.setDividerLocation(location[4]);
+      splitPane.setDividerLocation(location[4]);//[980f] this is getting ignored by swing due to the setDividerSize(1D) call a page or so above here.
     }
   }
 
