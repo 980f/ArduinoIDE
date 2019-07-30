@@ -330,10 +330,19 @@ public class Editor extends JFrame implements RunnerListener {
     final boolean horizontal= PreferencesData.getBoolean("editor.split.widescreen", false);//[980F]: I have a really wide screen ;)
     splitPane = new JSplitPane(horizontal?JSplitPane.HORIZONTAL_SPLIT:JSplitPane.VERTICAL_SPLIT, upper, consolePanel);
     if(horizontal) {//[980F] hiding this logic with my new flag, others may vote to make it apply to the other state as well.
-      defaultLocation[4] = storedLocation[4];//[980F] the split should be remembered even when screen is maximized, logic after here sees maxiixed and ignores the stored settings for split location.
-      //on the below: the screen management invokes a resize when the editor is made visible, and with the original 1.0 value that made the editor split location moot.
-      //perhaps we can make all these changes pertain only when the extended state (location[5]) is 'maximized'.
-      splitPane.setResizeWeight(PreferencesData.getFloat("editor.split.ratio",0.618F));//default value is for debug/traceability. A better one would be to compute the ratio when it was saved and restore that ratio. I am too lazy for that.
+      if(storedLocation.length > 5 && storedLocation[5] != 0) {//harumph: stored location deserves a class, rather than anonymous numbers.
+        //[980F] the split should be remembered even when screen is maximized, logic after here sees maximized and ignores the stored settings for split location.
+        //on the below: the screen management invokes a resize when the editor is made visible, and with the original 1.0 value that made the editor split location moot.
+        //guessing at the resize algorithm, and inverting that:
+        int desiredsplit=storedLocation[4];
+        defaultLocation[4]=desiredsplit;//see logic in setPlacement([],[]); probably gratuitous
+        int screenwidth=storedLocation[2];
+        int mindimension=PreferencesData.getInteger("editor.split.minimum",100);//100 is from splitPane.setMinimumSize hardcoded value
+        int fragmentoffree=screenwidth-mindimension-desiredsplit;
+        int wholeoffree= screenwidth-mindimension-mindimension;
+        final double resizeWeight = 1.0-((float)fragmentoffree/ (float)wholeoffree);
+        splitPane.setResizeWeight(resizeWeight);
+      }
     } else {
       // if window increases in size, give all of increase to
       // the textarea in the uppper pane
