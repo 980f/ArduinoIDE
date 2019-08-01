@@ -1,7 +1,7 @@
 lint issues:
 
 # use of array of int instead of a struct for window settings preferences, Editor::getPlacement(). have parse and pack members of an interface to isolate details from Base.
-# unnecessary (redundant) type argument in constructor of generic. eg: Base::editors
+# unnecessary (redundant) type argument in constructor of generic. eg: Base::editors (seems to have been fixed by later pull)
 # synching on non-final object (Base::editors).
 # use of C style array declarations
 # StringBuffer used when StringBuilder is generally better.

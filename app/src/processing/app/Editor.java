@@ -337,16 +337,14 @@ public class Editor extends JFrame implements RunnerListener {
         int desiredsplit=storedLocation[4];
         defaultLocation[4]=desiredsplit;//see logic in setPlacement([],[]); probably gratuitous
         int screenwidth=storedLocation[2];
-        int mindimension=PreferencesData.getInteger("editor.split.minimum",100);//100 is from splitPane.setMinimumSize hardcoded value
-        int fragmentoffree=screenwidth-mindimension-desiredsplit;
-        int wholeoffree= screenwidth-mindimension-mindimension;
-        final double resizeWeight = 1.0-((float)fragmentoffree/ (float)wholeoffree);
+        //nothing is stable here, the equation I had worked, I replaced a zeroed parameter with removal of it and it all went to shit again.
+        final double resizeWeight = ((float) ( desiredsplit) / (float)screenwidth);
         splitPane.setResizeWeight(resizeWeight);
       }
     } else {
       // if window increases in size, give all of increase to
-      // the textarea in the uppper pane
-      splitPane.setResizeWeight(1D);//this (1D) kills the setLocation call in setplacement, the divider location is then being set by the minimumsize.
+      // the textarea in the editor pane
+      splitPane.setResizeWeight(1D);//[980f] this (1D) kills the setLocation call in setplacement, the divider location is then being set by the minimumsize.
     }
 
     // repaint child panes while resizing
@@ -474,7 +472,7 @@ public class Editor extends JFrame implements RunnerListener {
   private void setPlacement(int[] location) {
     setBounds(location[0], location[1], location[2], location[3]);
     if (location[4] != 0) {
-      splitPane.setDividerLocation(location[4]);//[980f] this is getting ignored by swing due to the setDividerSize(1D) call a page or so above here.
+      splitPane.setDividerLocation(location[4]);//[980f] FYI: this gets ignored by swing when screen is maximized
     }
   }
 

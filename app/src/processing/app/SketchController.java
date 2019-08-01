@@ -548,7 +548,7 @@ public class SketchController {
       // perform the copy
       try {
         Base.copyFile(sourceFile, destFile);
-
+//[980f] todo: add Preference to link instead of copy
       } catch (IOException e) {
         Base.showWarning(tr("Error adding file"),
                          I18n.format(tr("Could not add ''{0}'' to the sketch."), filename),
