@@ -193,6 +193,8 @@ public class Base {
     return BaseNoGui.absoluteFile(path);
   }
 
+  public static Base forhacking;//[980f] added as least disruptive to source for getting access to 'active editor'. Would be better if the menu builder had access.
+
   public Base(String[] args) throws Exception {
     Thread deleteFilesOnShutdownThread = new Thread(DeleteFilesOnShutdown.INSTANCE);
     deleteFilesOnShutdownThread.setName("DeleteFilesOnShutdown");
@@ -488,6 +490,8 @@ public class Base {
       if (editors.isEmpty()) {
         handleNew();
       }
+
+      forhacking=this;//don't publish ourself until construction is essentially complete
 
       new Thread(new BuiltInCoreIsNewerCheck(this)).start();
 

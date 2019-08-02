@@ -719,6 +719,21 @@ public class Editor extends JFrame implements RunnerListener {
     item = new JMenuItem(tr("Add File..."));
     item.addActionListener(event -> sketchController.handleAddFile());
     sketchMenu.add(item);
+//[980f] add menu item to reload folder after adding files outside of the IDE:
+    item= new JMenuItem(tr("Refresh Sketch"));
+    item.addActionListener(event->{
+      Base base = Base.forhacking;
+      Editor activeEditor = base.getActiveEditor();
+      try {
+        if (activeEditor.getSketch().reload()) {
+          activeEditor.createTabs();
+        }
+      } catch (IOException e) {
+        System.err.println(e.getMessage());
+      }
+    });
+    sketchMenu.add(item);
+
   }
 
 
