@@ -285,7 +285,7 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
       int offsetX = 3;
       for (int i = 0; i < buttonCount; i++) {
         x1[i] = offsetX;
-        if (i == 2 || i == 6) x1[i] += BUTTON_GAP;
+        if (i == 2 || i == 6) x1[i] += BUTTON_GAP;//[980F] todo: button 2 is NEW, 6 doesn't exist, is this code from some other project?
         x2[i] = x1[i] + BUTTON_WIDTH;
         offsetX = x2[i];
       }

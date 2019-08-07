@@ -726,6 +726,8 @@ public class Editor extends JFrame implements RunnerListener {
       Editor activeEditor = base.getActiveEditor();
       try {
         if (activeEditor.getSketch().reload()) {
+          //todo: the below seems to lose edits in progress, that should be handled in the creatTabs
+          activeEditor.handleSave(true);//blocking save until we confirm this is the source of losses experienced on the rpi.
           activeEditor.createTabs();
         }
       } catch (IOException e) {
