@@ -34,6 +34,8 @@ public class SerialMonitor extends AbstractTextMonitor {
 
   private Serial serial;
   private int serialRate;
+  /** [980f] sometimes each keystroke is a command.*/
+  private boolean unbuffered;
 
   private static final int COMMAND_HISTORY_SIZE = 100;
   private final CommandHistory commandHistory =
@@ -41,7 +43,7 @@ public class SerialMonitor extends AbstractTextMonitor {
 
   public SerialMonitor(BoardPort port) {
     super(port);
-
+    unbuffered=PreferencesData.getBoolean("serial.unbuffered",false);
     serialRate = PreferencesData.getInteger("serial.debug_rate");
     serialRates.setSelectedItem(serialRate + " " + tr("baud"));
     onSerialRateChange((ActionEvent event) -> {
@@ -62,7 +64,9 @@ public class SerialMonitor extends AbstractTextMonitor {
 
     onSendCommand((ActionEvent event) -> {
       String command = textField.getText();
-      send(command);
+      if(!unbuffered) {//[980f] don't resend, but do pass into history mechanism.
+        send(command);
+      }
       commandHistory.addCommand(command);
       textField.setText("");
     });
@@ -73,8 +77,8 @@ public class SerialMonitor extends AbstractTextMonitor {
     textField.addKeyListener(new KeyAdapter() {
       @Override
       public void keyPressed(KeyEvent e) {
-        switch (e.getKeyCode()) {
 
+        switch (e.getKeyCode()) {
           // Select previous command.
           case KeyEvent.VK_UP:
             if (commandHistory.hasPreviousCommand()) {
