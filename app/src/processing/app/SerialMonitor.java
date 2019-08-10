@@ -99,6 +99,11 @@ public class SerialMonitor extends AbstractTextMonitor {
             textField.setText(commandHistory.resetHistoryLocation());
             break;
         }
+        if(unbuffered){
+          if(serial!=null){
+            serial.write(e.getKeyChar());
+          }
+        }
       }
     });
   }
@@ -147,7 +152,9 @@ public class SerialMonitor extends AbstractTextMonitor {
       int[] location = getPlacement();
       String locationStr = PApplet.join(PApplet.str(location), ",");
       PreferencesData.set("last.serial.location", locationStr);
-      textArea.setText("");
+      if(PreferencesData.getBoolean("serial.onclose.forget",true)) {//[980f]//why clear? I want to see what was going on just before the device cratered!
+        textArea.setText("");
+      }
       serial.dispose();
       serial = null;
     }
