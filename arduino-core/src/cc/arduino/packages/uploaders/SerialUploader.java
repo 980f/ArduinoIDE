@@ -63,7 +63,7 @@ public class SerialUploader extends Uploader {
   }
 
   @Override
-  public boolean uploadUsingPreferences(File sourcePath, String buildPath, String className, boolean usingProgrammer, List<String> warningsAccumulator) throws Exception {
+  public boolean uploadUsingPreferences(File sourcePath, String buildPath, String className, boolean usingProgrammer, List<String> warningsAccumulator) throws PreferencesMapException, RunnerException, SerialNotFoundException, InterruptedException {
     // FIXME: Preferences should be reorganized
     TargetPlatform targetPlatform = BaseNoGui.getTargetPlatform();
     PreferencesMap prefs = PreferencesData.getMap();
@@ -167,9 +167,17 @@ public class SerialUploader extends Uploader {
 
       // retrigger a discovery
       BaseNoGui.getDiscoveryManager().getSerialDiscoverer().setUploadInProgress(true);
-      Thread.sleep(100);
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+//        e.printStackTrace();
+      }
       BaseNoGui.getDiscoveryManager().getSerialDiscoverer().forceRefresh();
-      Thread.sleep(100);
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+//        e.printStackTrace();
+      }
     }
 
     BoardPort boardPort = BaseNoGui.getDiscoveryManager().find(PreferencesData.get("serial.port", ""));
@@ -277,7 +285,7 @@ public class SerialUploader extends Uploader {
     throw new RunnerException(tr("Couldn't find a Board on the selected port. Check that you have the correct port selected.  If it is correct, try pressing the board's reset button after initiating the upload."), false);
   }
 
-  private boolean uploadUsingProgrammer(String buildPath, String className) throws Exception {
+  private boolean uploadUsingProgrammer(String buildPath, String className) throws RunnerException, PreferencesMapException, SerialNotFoundException {
 
     TargetPlatform targetPlatform = BaseNoGui.getTargetPlatform();
     String programmer = PreferencesData.get("programmer");
@@ -375,7 +383,7 @@ public class SerialUploader extends Uploader {
     return runCommand("bootloader.pattern", prefs);
   }
 
-  private boolean runCommand(String patternKey, PreferencesMap prefs) throws Exception, RunnerException {
+  private boolean runCommand(String patternKey, PreferencesMap prefs) throws RunnerException, SerialNotFoundException, PreferencesMapException {
     try {
       String pattern = prefs.getOrExcept(patternKey);
       StringReplacer.checkIfRequiredKeyIsMissingOrExcept("serial.port", pattern, prefs);

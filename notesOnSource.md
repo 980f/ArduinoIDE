@@ -21,6 +21,16 @@ bad things I did:
 # created singleton ref for Base rther than adding parameters to menu builder so that it could create lambdas that need it.
 
 
+commandline testing issues:
+# preferences.txt not found even though it was in home/.arduino15, linked to it from app/lib
+# lib/themes directory not present, is there a note somewhere on how to build the delivery environment?
+# lib/public.gpg.key ditto
+# "Illegal reflective access by processing.app.linux.GTKLookAndFeelFixer (file:/d/bin/ArduinoIDE/app/lib/app980f.jar) to field com.sun.java.swing.plaf.gtk.GTKLookAndFeel.styleFactory"
+# java.lang.NullPointerException \n\t at cc.arduino.contributions.packages.ContributionsIndexer.syncBuiltInHardware(ContributionsIndexer.java:221)
+# couldn't just drop the jar into 1.8.9, too many new libs.
+
+
+
 
 
 
