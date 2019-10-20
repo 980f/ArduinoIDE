@@ -182,8 +182,9 @@ public class EditorHeader extends JComponent {
             int numTabs = editor.getTabs().size();
             for (int i = 0; i < numTabs; i++) {
               if ((x > tabLeft[i]) && (x < tabRight[i])) {
-                editor.selectTab(i);
+                editor.selectMruTab(i);
                 repaint();
+                break;//[980f] only one tab can match
               }
             }
           }
@@ -233,7 +234,7 @@ public class EditorHeader extends JComponent {
     g.setColor(backgroundColor);
     g.fillRect(0, 0, imageW, imageH);
 
-    List<EditorTab> tabs = editor.getTabs();
+    List<EditorTab> tabs = getEditorTabs();//[980f] mru
 
     int codeCount = tabs.size();
     if ((tabLeft == null) || (tabLeft.length < codeCount)) {
@@ -324,22 +325,21 @@ public class EditorHeader extends JComponent {
       menu.addSeparator();
 
       int i = 0;
-      //[980f] mru list, later perhaps alpha sort
-      boolean useMRU = PreferencesData.getBoolean("editor.tabs.order.mru", false);
-      final List<EditorTab> tabs = useMRU?editor.getMRU():editor.getTabs();
 
-      for (EditorTab tab : tabs) {
+      for (EditorTab tab : getEditorTabs()) {
         SketchFile file = tab.getSketchFile();
         final int index = i++;
         item = new JMenuItem(file.getPrettyName());
-        item.addActionListener((ActionEvent e) -> {
-          editor.selectTab(index);
-        });
+        item.addActionListener((ActionEvent e) -> editor.selectMruTab(index));//[980] must match outer iteration.
         menu.add(item);
       }
     }
   }
 
+  private List<EditorTab> getEditorTabs() {
+    //[980f] mru list, later perhaps alpha sort
+    return PreferencesData.getBoolean("editor.tabs.order.mru", false) ? editor.getMRU() : editor.getTabs();
+  }
 
   public Dimension getPreferredSize() {
     return getMinimumSize();

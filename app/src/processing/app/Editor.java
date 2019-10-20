@@ -1473,7 +1473,7 @@ public class Editor extends JFrame implements RunnerListener {
    * Gets the currently displaying tab.
    */
   public EditorTab getCurrentTab() {
-    return tabs.get(currentTabIndex);
+    return PreferencesData.getBoolean("editor.tabs.order.mru", false)? mru.get(0): tabs.get(currentTabIndex);
   }
 
   /**
@@ -1542,7 +1542,18 @@ public class Editor extends JFrame implements RunnerListener {
     });
   }
 
-  public void selectNextTab() {
+  /** make nth MRU entry current tab, should be same as tab order in tab bar*/
+  public void selectMruTab(final int index) {
+    EditorTab thetab = mru.get(index);
+    if(thetab!=null ) {//mru is lazy init, might not have anything yet.
+      int trueindex = tabs.indexOf(thetab);
+      selectTab(trueindex);
+    } else {
+      selectTab(0);//on error select main
+    }
+  }
+
+    public void selectNextTab() {
     selectTab((currentTabIndex + 1) % tabs.size());
   }
 
