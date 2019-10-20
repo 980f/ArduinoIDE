@@ -123,6 +123,8 @@ public class Editor extends JFrame implements RunnerListener {
   private JMenu programmersMenu;
   private final Box upper;
   private ArrayList<EditorTab> tabs = new ArrayList<>();
+  private ArrayList<EditorTab> mru = new ArrayList<>();//[980f] mru tabs for big projects
+
   private int currentTabIndex = -1;
 
   private static class ShouldSaveIfModified
@@ -1488,6 +1490,20 @@ public class Editor extends JFrame implements RunnerListener {
     return Collections.unmodifiableList(tabs);
   }
 
+  /**
+   * Returns an (unmodifiable) list of currently opened tabs in mru order.
+   */
+  public List<EditorTab> getMRU() {
+    mru.removeIf(tab-> tabs.indexOf(tab) < 0);//discard dead tabs
+    tabs.forEach(tab->{
+      if(mru.indexOf(tab)<0){
+        mru.add(tab);
+      }
+    });
+    return Collections.unmodifiableList(mru);
+  }
+
+
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
   /**
    * Change the currently displayed tab.
@@ -1496,9 +1512,19 @@ public class Editor extends JFrame implements RunnerListener {
    * @param index The index of the tab to select
    */
   public void selectTab(final int index) {
+    final EditorTab tab = tabs.get(index);
+    int newhead = mru.indexOf(tab);//will be moving to 0th location.
+    if(newhead!=0) {
+      if(newhead>0) {
+        mru.remove(newhead);
+      }
+      mru.add(0, tab);//expedite building list.
+    }
+
     currentTabIndex = index;
     updateUndoRedoState();
     updateTitle();
+
     header.rebuild();
     getCurrentTab().activated();
 

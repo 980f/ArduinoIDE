@@ -324,7 +324,11 @@ public class EditorHeader extends JComponent {
       menu.addSeparator();
 
       int i = 0;
-      for (EditorTab tab : editor.getTabs()) {
+      //[980f] mru list, later perhaps alpha sort
+      boolean useMRU = PreferencesData.getBoolean("editor.tabs.order.mru", false);
+      final List<EditorTab> tabs = useMRU?editor.getMRU():editor.getTabs();
+
+      for (EditorTab tab : tabs) {
         SketchFile file = tab.getSketchFile();
         final int index = i++;
         item = new JMenuItem(file.getPrettyName());
