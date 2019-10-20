@@ -198,12 +198,6 @@ public class DownloadableContributionsDownloader {
 
   public boolean checkSignature(MultiStepProgress progress, URL signatureUrl, ProgressListener progressListener, SignatureVerifier signatureVerifier, String statusText, File fileToVerify) throws Exception {
 
-    final boolean allowInsecurePackages =
-      PreferencesData.getBoolean("allow_insecure_packages", false);
-    if (allowInsecurePackages) {
-      log.info("Allow insecure packages is true the signature will be skip and return always verified");
-      return true;
-    }
 
     // Signature file name
     final String signatureFileName = FilenameUtils.getName(signatureUrl.getPath());
@@ -214,6 +208,13 @@ public class DownloadableContributionsDownloader {
     try {
       // Download signature
       download(signatureUrl, packageIndexSignatureTemp, progress, statusText, progressListener, true);
+
+      if (PreferencesData.areInsecurePackagesAllowed()) {
+        Files.move(packageIndexSignatureTemp.toPath(), packageIndexSignature.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        log.info("Allowing insecure packages because allow_insecure_packages is set to true in preferences.txt" +
+          " but the signature was download");
+        return true;
+      }
 
       // Verify the signature before move the files
       final boolean signatureVerified = signatureVerifier.isSigned(fileToVerify, packageIndexSignatureTemp);
