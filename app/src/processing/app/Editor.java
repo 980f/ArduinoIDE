@@ -1473,14 +1473,18 @@ public class Editor extends JFrame implements RunnerListener {
    * Gets the currently displaying tab.
    */
   public EditorTab getCurrentTab() {
-    return PreferencesData.getBoolean("editor.tabs.order.mru", false)? mru.get(0): tabs.get(currentTabIndex);
+    return mruEnabled() ? mru.get(0) : tabs.get(currentTabIndex);
+  }
+
+  public static boolean mruEnabled() {
+    return PreferencesData.getBoolean("editor.tabs.order.mru", false);
   }
 
   /**
    * Gets the index of the currently displaying tab.
    */
   public int getCurrentTabIndex() {
-    return currentTabIndex;
+    return mruEnabled()?0:currentTabIndex;
   }
 
   /**

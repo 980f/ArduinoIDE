@@ -338,7 +338,7 @@ public class EditorHeader extends JComponent {
 
   private List<EditorTab> getEditorTabs() {
     //[980f] mru list, later perhaps alpha sort
-    return PreferencesData.getBoolean("editor.tabs.order.mru", false) ? editor.getMRU() : editor.getTabs();
+    return Editor.mruEnabled() ? editor.getMRU() : editor.getTabs();
   }
 
   public Dimension getPreferredSize() {
