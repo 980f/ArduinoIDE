@@ -1,6 +1,5 @@
 package cc.arduino.contributions.libraries.ui;
 
-import org.fife.ui.rsyntaxtextarea.folding.Fold;
 import org.fife.ui.rsyntaxtextarea.folding.FoldManager;
 import processing.app.Editor;
 import processing.app.EditorTab;
@@ -29,6 +28,7 @@ public class GlobalFindall {
   static class State {
     public boolean allTabs = false;
     public boolean ignoreCase = false;
+    public boolean wordly = false;
     public String term = "if";
 
   }
@@ -45,19 +45,28 @@ public class GlobalFindall {
      * record the end in case we change the search term without clearing previous finds
      */
     public int end;
-    /** record what it looked like, for gui use. */
+    /**
+     * record what it looked like, for gui use.
+     */
     public String fragment;
+
   }
 
   public ArrayList<Finding> findings = new ArrayList<>();
 
-  void gotoFinding(Finding finding) {
+  public void eraseAll() {
+    editor.removeAllLineHighlights();
+    findings.clear();
+    refreshGui();
+  }
+
+  public void gotoFinding(Finding finding) {
     if (finding != null) {
       EditorTab tab = finding.tab.get();
       if (tab != null) {
         editor.selectTab(tab);
         tab.setSelection(finding.start, finding.end);
-        if(finding.line>=0) {//not sure if we can get valid line numbers.
+        if (finding.line >= 0) {//not sure if we can get valid line numbers.
           tab.goToLine(finding.line);
         }
         SketchTextArea textarea = tab.getTextArea();
@@ -76,37 +85,72 @@ public class GlobalFindall {
     this.editor = editor;
   }
 
+  ///////////////////////////////////////
   public interface FindWatcher {
     void refresh();
   }
 
-  public FindWatcher gui=null;
+  private WeakReference<FindWatcher> gui = null;
+
+  public void refreshGui() {
+    if (gui != null) {
+      FindWatcher thegui = gui.get();
+      if (thegui != null) {
+        thegui.refresh();
+      }
+    }
+  }
+
+  public void linkRefresh(FindWatcher agui) {
+    gui = new WeakReference<>(agui);
+  }
+  ////////////////////////////////////////////
+
+  /**
+   * @todo: replace this with a functional that user can provide
+   */
+  private static boolean inWord(char see) {
+    return !Character.isWhitespace(see) && Character.isLetterOrDigit(see);
+  }
 
   private void findInTab(EditorTab tab) {
     SketchTextArea area = tab.getTextArea();
     String text = tab.getText();
     String term = state.term;
+
     if (state.ignoreCase) {
       term = term.toLowerCase();
       text = text.toLowerCase();
     }
+    final int length = term.length();
 
     int foundAt = -1;
     while (true) {
       foundAt = text.indexOf(term, foundAt + 1);
+      int end = foundAt + length;
       if (foundAt >= 0) {
+        if (state.wordly) {
+          if (foundAt != 0 && inWord(text.charAt(foundAt - 1))) {
+            continue;
+          }
+
+          if ((end < text.length() && inWord(text.charAt(end)))) {
+            continue;
+          }
+        }
+
         Finding finding = new Finding();
         finding.tab = new WeakReference<>(tab);
         finding.start = foundAt;
-        finding.end = foundAt + term.length();
+        finding.end = foundAt + length;
         addFinding(finding);
         try {
-          finding.line= area.getLineOfOffset(finding.start);
-//this does some extra stuff:    editor.addLineHighlight(finding.line);
+          finding.line = area.getLineOfOffset(finding.start);
+          //this does some extra stuff:    editor.addLineHighlight(finding.line);
           exposeLine(finding.line, area.getFoldManager());
           area.addLineHighlight(finding.line, new Color(0, 0, 1, 0.2f));
         } catch (BadLocationException e) {
-          finding.line=-1;
+          finding.line = -1;
         }
       } else {
         break;
@@ -114,7 +158,9 @@ public class GlobalFindall {
     }
   }
 
-  /** todo: move to a generic place */
+  /**
+   * todo: move to a generic place
+   */
   public static void exposeLine(int line, FoldManager foldManager) {
     if (foldManager.isLineHidden(line)) {
       //must open all containing folds, opening the direct containing one apparently doesn't open outer ones.
@@ -140,15 +186,20 @@ public class GlobalFindall {
     } else {
       findInTab(editor.getCurrentTab());
     }
+    refreshGui();
   }
 
-  /** hiding here for pull convenience */
+  /**
+   * hiding here for pull convenience
+   */
   public static class FindAllGui extends JPanel implements FindWatcher {
     public GlobalFindall findall;
 
+    //would be parts of a closure in other languages
     private JTextField findField;
     private JCheckBox searchAllFilesBox;
     private JCheckBox ignoreCaseBox;
+    private JCheckBox wordlyBox;
 
     private static class FindList extends JPanel {
       private GridBagLayout grid;
@@ -165,10 +216,10 @@ public class GlobalFindall {
         private JTextField linenumber;
         private JTextField image;
 
-        FindItem(Finding finding){
-          this.finding=finding;
+        FindItem(Finding finding) {
+          this.finding = finding;
           EditorTab tab = finding.tab.get();
-          if(tab!=null) {
+          if (tab != null) {
             picked = new JCheckBox();
             tabname = new JTextField();
             tabname.setText(tab.getSketchFile().getBaseName());
@@ -181,19 +232,19 @@ public class GlobalFindall {
 
       }
 
-      private void addItem(FindItem item){
-        grid.addLayoutComponent(item.picked,cursor);
+      private void addItem(FindItem item) {
+        grid.addLayoutComponent(item.picked, cursor);
         ++cursor.gridx;
-        grid.addLayoutComponent(item.tabname,cursor);
+        grid.addLayoutComponent(item.tabname, cursor);
         ++cursor.gridx;
-        grid.addLayoutComponent(item.linenumber,cursor);
+        grid.addLayoutComponent(item.linenumber, cursor);
         ++cursor.gridx;
-        grid.addLayoutComponent(item.image,cursor);
+        grid.addLayoutComponent(item.image, cursor);
         ++cursor.gridy;
-        cursor.gridx=0;
+        cursor.gridx = 0;
       }
 
-      public void refresh(ArrayList<Finding> findings){
+      public void refresh(ArrayList<Finding> findings) {
         grid = new GridBagLayout();//because we can't delete all components
         setLayout(grid);
         cursor = new GridBagConstraints();
@@ -201,29 +252,38 @@ public class GlobalFindall {
       }
     }
 
-    FindList list=new FindList();
+    FindList list = new FindList();
 
-    /** called when a find has been refreshed */
+    /**
+     * called when a find has been refreshed
+     */
     @Override public void refresh() {
       list.refresh(findall.findings);
+      list.invalidate();
     }
 
-    /** matching original FindReplace internals, for familiarity */
-    enum OptionsName{
-      findText("Find:"), searchAllFiles("Search all Sketch Tabs"), ignoreCase("Ignore Case"), replaceText("Replace:"), wrapAround("Wrap Around"), GO("GO!");
+    /**
+     * matching original FindReplace internals, for familiarity
+     */
+    enum OptionsName {
+      findText("Find:"), searchAllFiles("Search all Sketch Tabs"), ignoreCase(
+        "Ignore Case"), wordly("Words"), replaceText("Replace:"),//NYI
+      wrapAround("Wrap Around"), //not meaningful
+      GO("GO!"), clearFinds("CLEAR");
 
-      final String display;
-      OptionsName(String display){
-        this.display = display;
+      final String pretty;
+
+      OptionsName(String pretty) {
+        this.pretty = pretty;
       }
     }
 
     public FindAllGui(GlobalFindall findall) {
       this.findall = findall;
-      findall.gui=this;//to get refresh signal when find invoked from means other than this gui.
+      findall.linkRefresh(this);
 
       JLabel findLabel = new JLabel();
-      findLabel.setText(tr(findText.toString()));
+      findLabel.setText(tr(findText.pretty));
       this.add(findLabel);
 
       findField = new JTextField();
@@ -238,21 +298,32 @@ public class GlobalFindall {
       });
 
       ignoreCaseBox = new JCheckBox();
-      ignoreCaseBox.setText(tr(ignoreCase.toString()));
+      ignoreCaseBox.setText(tr(ignoreCase.pretty));
       this.add(ignoreCaseBox);
 
-      searchAllFilesBox = new JCheckBox();
-      searchAllFilesBox.setText(tr(searchAllFiles.toString()));
-      this.add(searchAllFilesBox);
-      JButton findButton = new JButton();
+      wordlyBox = new JCheckBox();
+      wordlyBox.setText(tr(wordly.pretty));
+      this.add(wordlyBox);
 
-      findButton.setText(tr(GO.toString()));
+      searchAllFilesBox = new JCheckBox();
+      searchAllFilesBox.setText(tr(searchAllFiles.pretty));
+      this.add(searchAllFilesBox);
+
+      JButton findButton = new JButton();
+      findButton.setText(tr(GO.pretty));
       findButton.addActionListener(evt -> {
         findall.state.term = findField.getText();
-        findall.state.ignoreCase=ignoreCaseBox.isSelected();
-        findall.state.allTabs=searchAllFilesBox.isSelected();
-        findall.findem();});
+        findall.state.ignoreCase = ignoreCaseBox.isSelected();
+        findall.state.wordly = wordlyBox.isSelected();
+        findall.state.allTabs = searchAllFilesBox.isSelected();
+        findall.findem();
+      });
       this.add(findButton);
+
+      JButton clearButton = new JButton();
+      clearButton.setText(tr(GO.pretty));
+      clearButton.addActionListener(evt -> findall.eraseAll());
+      this.add(clearButton);
 
       this.add(list);
       refresh();
@@ -262,15 +333,15 @@ public class GlobalFindall {
       JPopupMenu menu = new JPopupMenu();
       Action cut = new DefaultEditorKit.CutAction();
       cut.putValue(Action.NAME, tr("Cut"));
-      menu.add( cut );
+      menu.add(cut);
 
       Action copy = new DefaultEditorKit.CopyAction();
       copy.putValue(Action.NAME, tr("Copy"));
-      menu.add( copy );
+      menu.add(copy);
 
       Action paste = new DefaultEditorKit.PasteAction();
       paste.putValue(Action.NAME, tr("Paste"));
-      menu.add( paste );
+      menu.add(paste);
       return menu;
     }
   }
