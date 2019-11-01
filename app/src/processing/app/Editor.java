@@ -61,28 +61,12 @@ import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JSplitPane;
-import javax.swing.JTextArea;
-import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
-import javax.swing.TransferHandler;
+import javax.swing.*;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
-import javax.swing.text.Element;
 
+import cc.arduino.contributions.libraries.ui.GlobalFindall;
 import org.fife.ui.rsyntaxtextarea.folding.FoldManager;
 
 import com.jcraft.jsch.JSchException;
@@ -204,6 +188,7 @@ public class Editor extends JFrame implements RunnerListener {
   EditorStatus status;
   EditorConsole console;
 
+  public JTabbedPane dock;//[980f] change console into dock for organizing what are presently pop-unders.
   private JSplitPane splitPane;
 
   // currently opened program
@@ -331,8 +316,22 @@ public class Editor extends JFrame implements RunnerListener {
     codePanel = new JPanel(new BorderLayout());
     upper.add(codePanel);
 
+    Component dockslot;
+    if(PreferencesData.getBoolean("editor.dock", false)) {//[980F]: get rid of popunders by docking them
+      //980F dock serial monitor et al. in new frame around console.
+      dock = new JTabbedPane();
+      dock.addTab(tr("Console"), consolePanel);
+      dock.addTab(tr("Finder"), new GlobalFindall.FindAllGui(new GlobalFindall(this)));
+      //todo: add serial monitor likewise.
+      dockslot=dock;
+    } else {
+      dockslot = consolePanel;
+    }
+
     final boolean horizontal= PreferencesData.getBoolean("editor.split.widescreen", false);//[980F]: I have a really wide screen ;)
-    splitPane = new JSplitPane(horizontal?JSplitPane.HORIZONTAL_SPLIT:JSplitPane.VERTICAL_SPLIT, upper, consolePanel);
+
+    splitPane = new JSplitPane(horizontal?JSplitPane.HORIZONTAL_SPLIT:JSplitPane.VERTICAL_SPLIT, upper, dockslot);
+
     if(horizontal) {//[980F] hiding this logic with my new flag, others may vote to make it apply to the other state as well.
       if(storedLocation.length > 5 && storedLocation[5] != 0) {//harumph: stored location deserves a class, rather than anonymous numbers.
         //[980F] the split should be remembered even when screen is maximized, logic after here sees maximized and ignores the stored settings for split location.
@@ -1507,6 +1506,16 @@ public class Editor extends JFrame implements RunnerListener {
     return Collections.unmodifiableList(mru);
   }
 
+  /** @returns whether tab was actually still part of editor, useful for managing cached finds. */
+  public boolean selectTab(final EditorTab tab) {
+    int index=tabs.indexOf(tab);
+    if(index>=0) {
+      selectTab(index);
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
   /**
@@ -2611,6 +2620,7 @@ public class Editor extends JFrame implements RunnerListener {
 
     if (e instanceof RunnerException) {
       RunnerException re = (RunnerException) e;
+      //[980f]: todo add intercept here to fill a GlobalFindall gui.
       if (re.hasCodeFile()) {
         selectTab(findTabIndex(re.getCodeFile()));
       }
