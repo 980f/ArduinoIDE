@@ -1,10 +1,10 @@
 
-Forked to change:
-# split UI vertically with wide screen to more readily process compilation errors, and watch build process while still perusing code.
+Forked by 980F to:
+# split UI vertically on wide screen to more readily process compilation errors, and watch build process while still perusing code. Added preference editor.split.widescreen=true
 # added Sketch menu item to reload tabs for when files are added to folder outside of the IDE, presently must restart the IDE.
-# added unbuffered output to Serial Monitor for talking to character oriented protocols vs. line oriented.
+# added unbuffered output to Serial Monitor for talking to character oriented protocols vs. line oriented. Preference: serial.unbuffered=true
+# tab reorder for navigating between files, using MRU. Preference: editor.tabs.order.mru=true
 # todo: tree list for picking device type.
-# todo: multiple tabs or tab reorder for navigating between files, alpha doesn't cut it for me-MRU would be better.
 # todo: put find dialog into a split of the build window, I hate playing inverse whack-a-mole with it.
 
 Arduino
@@ -32,15 +32,12 @@ IDE can be downloaded for free at [https://arduino.cc](https://www.arduino.cc/en
 
 -  To report a *bug* in the software or to request *a simple enhancement* go to [Github Issues](https://github.com/arduino/Arduino/issues)
 
--  More complex requests and technical discussion should go on the [Arduino Developers
-mailing list](https://groups.google.com/a/arduino.cc/forum/#!forum/developers)
+-  More complex requests and technical discussion should go on the [Arduino Developers mailing list](https://groups.google.com/a/arduino.cc/forum/#!forum/developers)
 
--  If you're interested in modifying or extending the Arduino software, we strongly
-suggest discussing your ideas on the
+-  If you're interested in modifying or extending the Arduino software, we strongly suggest discussing your ideas on the
 [Developers mailing list](https://groups.google.com/a/arduino.cc/forum/#!forum/developers)
  *before* starting to work on them.
-That way you can coordinate with the Arduino Team and others,
-giving your work a higher chance of being integrated into the official release
+That way you can coordinate with the Arduino Team and others, giving your work a higher chance of being integrated into the official release
 
 ## Installation
 
