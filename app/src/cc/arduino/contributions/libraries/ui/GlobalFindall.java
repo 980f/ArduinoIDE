@@ -8,6 +8,7 @@ import processing.app.syntax.SketchTextArea;
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.Segment;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -123,7 +124,9 @@ public class GlobalFindall {
       text = text.toLowerCase();
     }
     final int length = term.length();
-
+    if (length < 1) {
+      return;
+    }
     int foundAt = -1;
     while (true) {
       foundAt = text.indexOf(term, foundAt + 1);
@@ -148,7 +151,10 @@ public class GlobalFindall {
           finding.line = area.getLineOfOffset(finding.start);
           //this does some extra stuff:    editor.addLineHighlight(finding.line);
           exposeLine(finding.line, area.getFoldManager());
-          area.addLineHighlight(finding.line, new Color(0, 0, 1, 0.2f));
+          area.addLineHighlight(finding.line, new Color(0, 0, 1, 0.2f));//todo: color changes with each invocation
+          Segment segment=new Segment();
+          area.getTextLine(finding.line,segment);
+          finding.fragment= segment.toString();
         } catch (BadLocationException e) {
           finding.line = -1;
         }
@@ -200,66 +206,13 @@ public class GlobalFindall {
     private JCheckBox searchAllFilesBox;
     private JCheckBox ignoreCaseBox;
     private JCheckBox wordlyBox;
-
-    private static class FindList extends JPanel {
-      private GridBagLayout grid;
-      GridBagConstraints cursor;
-
-      FindList() {
-
-      }
-
-      private static class FindItem {
-        Finding finding;//retain for debug
-        private JCheckBox picked;
-        private JTextField tabname;
-        private JTextField linenumber;
-        private JTextField image;
-
-        FindItem(Finding finding) {
-          this.finding = finding;
-          EditorTab tab = finding.tab.get();
-          if (tab != null) {
-            picked = new JCheckBox();
-            tabname = new JTextField();
-            tabname.setText(tab.getSketchFile().getBaseName());
-            linenumber = new JTextField();
-            linenumber.setText(String.valueOf(finding.line));
-            image = new JTextField();
-            image.setText(finding.fragment);
-          }
-        }
-
-      }
-
-      private void addItem(FindItem item) {
-        grid.addLayoutComponent(item.picked, cursor);
-        ++cursor.gridx;
-        grid.addLayoutComponent(item.tabname, cursor);
-        ++cursor.gridx;
-        grid.addLayoutComponent(item.linenumber, cursor);
-        ++cursor.gridx;
-        grid.addLayoutComponent(item.image, cursor);
-        ++cursor.gridy;
-        cursor.gridx = 0;
-      }
-
-      public void refresh(ArrayList<Finding> findings) {
-        grid = new GridBagLayout();//because we can't delete all components
-        setLayout(grid);
-        cursor = new GridBagConstraints();
-        findings.forEach(finding -> addItem(new FindItem(finding)));
-      }
-    }
-
-    FindList list = new FindList();
+    GlobalFindall.FindList list;
 
     /**
      * called when a find has been refreshed
      */
     @Override public void refresh() {
       list.refresh(findall.findings);
-      list.invalidate();
     }
 
     /**
@@ -278,16 +231,21 @@ public class GlobalFindall {
       }
     }
 
+    private void addComp(Component comp) {
+      comp.setVisible(true);
+      this.add(comp);
+    }
+
     public FindAllGui(GlobalFindall findall) {
       this.findall = findall;
       findall.linkRefresh(this);
 
       JLabel findLabel = new JLabel();
       findLabel.setText(tr(findText.pretty));
-      this.add(findLabel);
+      addComp(findLabel);
 
       findField = new JTextField();
-      this.add(findField);
+      addComp(findField);
       findField.setColumns(20);
       findField.setComponentPopupMenu(makeCCP_Popup());
       addWindowListener(new WindowAdapter() {
@@ -299,15 +257,15 @@ public class GlobalFindall {
 
       ignoreCaseBox = new JCheckBox();
       ignoreCaseBox.setText(tr(ignoreCase.pretty));
-      this.add(ignoreCaseBox);
+      addComp(ignoreCaseBox);
 
       wordlyBox = new JCheckBox();
       wordlyBox.setText(tr(wordly.pretty));
-      this.add(wordlyBox);
+      addComp(wordlyBox);
 
       searchAllFilesBox = new JCheckBox();
       searchAllFilesBox.setText(tr(searchAllFiles.pretty));
-      this.add(searchAllFilesBox);
+      addComp(searchAllFilesBox);
 
       JButton findButton = new JButton();
       findButton.setText(tr(GO.pretty));
@@ -318,15 +276,22 @@ public class GlobalFindall {
         findall.state.allTabs = searchAllFilesBox.isSelected();
         findall.findem();
       });
-      this.add(findButton);
+      addComp(findButton);
 
       JButton clearButton = new JButton();
-      clearButton.setText(tr(GO.pretty));
+      clearButton.setText(tr(clearFinds.pretty));
       clearButton.addActionListener(evt -> findall.eraseAll());
-      this.add(clearButton);
+      addComp(clearButton);
 
-      this.add(list);
-      refresh();
+      list = new GlobalFindall.FindList();
+
+      JScrollPane scrollPane=new JScrollPane(list);
+      addComp(scrollPane);
+
+      // This must be run in the GUI thread
+      SwingUtilities.invokeLater(() -> {
+        refresh();
+      });
     }
 
     private JPopupMenu makeCCP_Popup() {
@@ -346,4 +311,91 @@ public class GlobalFindall {
     }
   }
 
+  private static class FindList extends JPanel {
+    static boolean gridly=false;
+    private GridBagLayout grid;
+    GridBagConstraints cursor;
+
+    FindList() {
+      setPreferredSize(new Dimension(200,200));
+    }
+
+    private static class FindItem {
+      Finding finding;//retain for debug
+      private JCheckBox picked;
+      private JTextField tabname;
+      private JTextField linenumber;
+      private JTextField image;
+
+      FindItem(Finding finding) {
+        this.finding = finding;
+        EditorTab tab = finding.tab.get();
+        if (tab != null) {
+          picked = new JCheckBox();
+          tabname = new JTextField();
+          tabname.setText(tab.getSketchFile().getBaseName());
+          linenumber = new JTextField();
+          linenumber.setText(String.valueOf(finding.line));
+          image = new JTextField();
+          image.setText(finding.fragment);
+        }
+      }
+
+    }
+
+    private void addHeader(){
+      if(gridly) {
+        grid.addLayoutComponent(new JLabel("X"), cursor);
+        ++cursor.gridx;
+        grid.addLayoutComponent(new JLabel("File"), cursor);
+        ++cursor.gridx;
+        grid.addLayoutComponent(new JLabel("line"), cursor);
+        ++cursor.gridx;
+        grid.addLayoutComponent(new JLabel("context"), cursor);
+        ++cursor.gridy;
+        cursor.gridx = 0;
+      } else {
+        add(new JLabel("X"));
+        add(new JLabel("File"));
+        add(new JLabel("line"));
+        add(new JLabel("context"));
+      }
+    }
+
+    private void addItem(FindItem item) {
+
+      if(gridly)  {
+        grid.addLayoutComponent(item.picked, cursor);
+        ++cursor.gridx;
+        grid.addLayoutComponent(item.tabname, cursor);
+        ++cursor.gridx;
+        grid.addLayoutComponent(item.linenumber, cursor);
+        ++cursor.gridx;
+        grid.addLayoutComponent(item.image, cursor);
+        ++cursor.gridy;
+        cursor.gridx = 0;
+      } else {
+        add(item.picked);
+        add(item.tabname);
+        add(item.linenumber);
+        add(item.image);
+      }
+    }
+
+    public void refresh(ArrayList<Finding> findings) {
+
+      if(gridly) {
+        grid = new GridBagLayout();//because we can't delete all components
+        setLayout(grid);
+        cursor = new GridBagConstraints();
+        addHeader();
+        findings.forEach(finding -> addItem(new FindItem(finding)));
+        addHeader();
+      } else {
+        removeAll();
+        setLayout(new GridLayout(4,findings.size()));
+        findings.forEach(finding -> addItem(new FindItem(finding)));
+      }
+    }
+  }
 }
