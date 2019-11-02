@@ -13,6 +13,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.lang.ref.WeakReference;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +32,6 @@ public class GlobalFindall {
     public boolean ignoreCase = false;
     public boolean wordly = false;
     public String term = "if";
-
   }
 
   static class Finding {
@@ -50,7 +50,6 @@ public class GlobalFindall {
      * record what it looked like, for gui use.
      */
     public String fragment;
-
   }
 
   public ArrayList<Finding> findings = new ArrayList<>();
@@ -152,9 +151,9 @@ public class GlobalFindall {
           //this does some extra stuff:    editor.addLineHighlight(finding.line);
           exposeLine(finding.line, area.getFoldManager());
           area.addLineHighlight(finding.line, new Color(0, 0, 1, 0.2f));//todo: color changes with each invocation
-          Segment segment=new Segment();
-          area.getTextLine(finding.line,segment);
-          finding.fragment= segment.toString();
+          Segment segment = new Segment();
+          area.getTextLine(finding.line, segment);
+          finding.fragment = segment.toString().trim();
         } catch (BadLocationException e) {
           finding.line = -1;
         }
@@ -211,7 +210,8 @@ public class GlobalFindall {
     /**
      * called when a find has been refreshed
      */
-    @Override public void refresh() {
+    @Override
+    public void refresh() {
       list.refresh(findall.findings);
     }
 
@@ -285,13 +285,11 @@ public class GlobalFindall {
 
       list = new GlobalFindall.FindList();
 
-      JScrollPane scrollPane=new JScrollPane(list);
+      JScrollPane scrollPane = new JScrollPane(list);
       addComp(scrollPane);
 
       // This must be run in the GUI thread
-      SwingUtilities.invokeLater(() -> {
-        refresh();
-      });
+      SwingUtilities.invokeLater(this::refresh);
     }
 
     private JPopupMenu makeCCP_Popup() {
@@ -311,91 +309,110 @@ public class GlobalFindall {
     }
   }
 
-  private static class FindList extends JPanel {
-    static boolean gridly=false;
-    private GridBagLayout grid;
-    GridBagConstraints cursor;
+  private static class FindList extends JTextArea {
 
-    FindList() {
-      setPreferredSize(new Dimension(200,200));
-    }
-
-    private static class FindItem {
-      Finding finding;//retain for debug
-      private JCheckBox picked;
-      private JTextField tabname;
-      private JTextField linenumber;
-      private JTextField image;
-
-      FindItem(Finding finding) {
-        this.finding = finding;
-        EditorTab tab = finding.tab.get();
-        if (tab != null) {
-          picked = new JCheckBox();
-          tabname = new JTextField();
-          tabname.setText(tab.getSketchFile().getBaseName());
-          linenumber = new JTextField();
-          linenumber.setText(String.valueOf(finding.line));
-          image = new JTextField();
-          image.setText(finding.fragment);
-        }
-      }
-
-    }
-
-    private void addHeader(){
-      if(gridly) {
-        grid.addLayoutComponent(new JLabel("X"), cursor);
-        ++cursor.gridx;
-        grid.addLayoutComponent(new JLabel("File"), cursor);
-        ++cursor.gridx;
-        grid.addLayoutComponent(new JLabel("line"), cursor);
-        ++cursor.gridx;
-        grid.addLayoutComponent(new JLabel("context"), cursor);
-        ++cursor.gridy;
-        cursor.gridx = 0;
-      } else {
-        add(new JLabel("X"));
-        add(new JLabel("File"));
-        add(new JLabel("line"));
-        add(new JLabel("context"));
-      }
-    }
-
-    private void addItem(FindItem item) {
-
-      if(gridly)  {
-        grid.addLayoutComponent(item.picked, cursor);
-        ++cursor.gridx;
-        grid.addLayoutComponent(item.tabname, cursor);
-        ++cursor.gridx;
-        grid.addLayoutComponent(item.linenumber, cursor);
-        ++cursor.gridx;
-        grid.addLayoutComponent(item.image, cursor);
-        ++cursor.gridy;
-        cursor.gridx = 0;
-      } else {
-        add(item.picked);
-        add(item.tabname);
-        add(item.linenumber);
-        add(item.image);
+    private void addFinding(Finding finding) {
+      EditorTab tab = finding.tab.get();
+      if (tab != null) {
+        String name = tab.getSketchFile().getBaseName();
+        append(MessageFormat.format("\n[{0}:{1}] {3}", name, finding.line, finding.start, finding.fragment));
       }
     }
 
     public void refresh(ArrayList<Finding> findings) {
-
-      if(gridly) {
-        grid = new GridBagLayout();//because we can't delete all components
-        setLayout(grid);
-        cursor = new GridBagConstraints();
-        addHeader();
-        findings.forEach(finding -> addItem(new FindItem(finding)));
-        addHeader();
-      } else {
-        removeAll();
-        setLayout(new GridLayout(4,findings.size()));
-        findings.forEach(finding -> addItem(new FindItem(finding)));
-      }
+      setText(null);
+      setWrapStyleWord(true);
+      setLineWrap(true);
+      findings.forEach(this::addFinding);
+      revalidate();
     }
   }
+//I could not get any variant of the following to actually display anything other than background color. I have no clue as to why this particular JPanel doesn't show nested content.
+  //  private static class FindList extends JPanel {
+  //    static boolean gridly=false;
+  //    private GridBagLayout grid;
+  //    GridBagConstraints cursor;
+  //
+  //    FindList() {
+  //      setPreferredSize(new Dimension(200,200));
+  //    }
+  //
+  //    private static class FindItem {
+  //      Finding finding;//retain for debug
+  //      private JCheckBox picked;
+  //      private JTextField tabname;
+  //      private JTextField linenumber;
+  //      private JTextField image;
+  //
+  //      FindItem(Finding finding) {
+  //        this.finding = finding;
+  //        EditorTab tab = finding.tab.get();
+  //        if (tab != null) {
+  //          picked = new JCheckBox();
+  //          tabname = new JTextField();
+  //          tabname.setText(tab.getSketchFile().getBaseName());
+  //          linenumber = new JTextField();
+  //          linenumber.setText(String.valueOf(finding.line));
+  //          image = new JTextField();
+  //          image.setText(finding.fragment);
+  //        }
+  //      }
+  //
+  //    }
+  //
+  //    private void addHeader(){
+  //      if(gridly) {
+  //        grid.addLayoutComponent(new JLabel("X"), cursor);
+  //        ++cursor.gridx;
+  //        grid.addLayoutComponent(new JLabel("File"), cursor);
+  //        ++cursor.gridx;
+  //        grid.addLayoutComponent(new JLabel("line"), cursor);
+  //        ++cursor.gridx;
+  //        grid.addLayoutComponent(new JLabel("context"), cursor);
+  //        ++cursor.gridy;
+  //        cursor.gridx = 0;
+  //      } else {
+  //        add(new JLabel("X"));
+  //        add(new JLabel("File"));
+  //        add(new JLabel("line"));
+  //        add(new JLabel("context"));
+  //      }
+  //    }
+  //
+  //    private void addItem(FindItem item) {
+  //
+  //      if(gridly)  {
+  //        grid.addLayoutComponent(item.picked, cursor);
+  //        ++cursor.gridx;
+  //        grid.addLayoutComponent(item.tabname, cursor);
+  //        ++cursor.gridx;
+  //        grid.addLayoutComponent(item.linenumber, cursor);
+  //        ++cursor.gridx;
+  //        grid.addLayoutComponent(item.image, cursor);
+  //        ++cursor.gridy;
+  //        cursor.gridx = 0;
+  //      } else {
+  //        add(item.picked);
+  //        add(item.tabname);
+  //        add(item.linenumber);
+  //        add(item.image);
+  //      }
+  //    }
+  //
+  //    public void refresh(ArrayList<Finding> findings) {
+  //
+  //      if(gridly) {
+  //        grid = new GridBagLayout();//because we can't delete all components
+  //        setLayout(grid);
+  //        cursor = new GridBagConstraints();
+  //        addHeader();
+  //        findings.forEach(finding -> addItem(new FindItem(finding)));
+  //        addHeader();
+  //      } else {
+  //        removeAll();
+  //        setLayout(new GridLayout(4,findings.size()));
+  //        findings.forEach(finding -> addItem(new FindItem(finding)));
+  //      }
+  //    }
+  //  }
 }
