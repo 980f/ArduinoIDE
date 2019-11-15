@@ -10,6 +10,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultEditorKit;
 import javax.swing.text.Segment;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.lang.ref.WeakReference;
@@ -231,22 +232,59 @@ public class GlobalFindall {
       }
     }
 
-    private void addComp(Component comp) {
-      comp.setVisible(true);
-      this.add(comp);
+
+    static class EzPanel extends JPanel {
+      public EzPanel(){
+        setVisible(true);
+      }
+
+      public EzPanel addComp(Component comp) {
+        comp.setVisible(true);
+        this.add(comp);
+        return this;
+      }
+
+      public EzPanel addLabel(String keytext) {
+        JLabel findLabel = new JLabel();
+        findLabel.setText(tr(keytext));
+        addComp(findLabel);
+        return this;
+      }
+
+      public JTextField addTextEntry(String label,int width){
+        addLabel(label);
+
+        final JTextField field = new JTextField();
+        addComp(field);
+        field.setColumns(width);
+        return field;
+      }
+
+      public JCheckBox addCheckBox(String label){
+        final JCheckBox box = new JCheckBox();
+        box.setText(tr(label));
+        addComp(box);
+        return box;
+      }
+
+      public JButton addButton(String legend, final ActionListener action){
+        JButton button = new JButton();
+        button.setText(tr(legend));
+        button.addActionListener(action);
+        addComp(button);
+        return button;
+      }
     }
+
 
     public FindAllGui(GlobalFindall findall) {
       this.findall = findall;
       findall.linkRefresh(this);
 
-      JLabel findLabel = new JLabel();
-      findLabel.setText(tr(findText.pretty));
-      addComp(findLabel);
+      setLayout(new BoxLayout(this,1));//over under
 
-      findField = new JTextField();
-      addComp(findField);
-      findField.setColumns(20);
+      final EzPanel dialog = new EzPanel();
+      findField=dialog.addTextEntry(findText.pretty,20);
       findField.setComponentPopupMenu(makeCCP_Popup());
       addWindowListener(new WindowAdapter() {
         public void windowActivated(WindowEvent e) {
@@ -255,41 +293,26 @@ public class GlobalFindall {
         }
       });
 
-      ignoreCaseBox = new JCheckBox();
-      ignoreCaseBox.setText(tr(ignoreCase.pretty));
-      addComp(ignoreCaseBox);
-
-      wordlyBox = new JCheckBox();
-      wordlyBox.setText(tr(wordly.pretty));
-      addComp(wordlyBox);
-
-      searchAllFilesBox = new JCheckBox();
-      searchAllFilesBox.setText(tr(searchAllFiles.pretty));
-      addComp(searchAllFilesBox);
-
-      JButton findButton = new JButton();
-      findButton.setText(tr(GO.pretty));
-      findButton.addActionListener(evt -> {
+      ignoreCaseBox = dialog.addCheckBox(ignoreCase.pretty);
+      wordlyBox = dialog.addCheckBox(wordly.pretty);
+      searchAllFilesBox = dialog.addCheckBox(searchAllFiles.pretty);
+      dialog.addButton(GO.pretty,evt -> {
         findall.state.term = findField.getText();
         findall.state.ignoreCase = ignoreCaseBox.isSelected();
         findall.state.wordly = wordlyBox.isSelected();
         findall.state.allTabs = searchAllFilesBox.isSelected();
         findall.findem();
       });
-      addComp(findButton);
-
-      JButton clearButton = new JButton();
-      clearButton.setText(tr(clearFinds.pretty));
-      clearButton.addActionListener(evt -> findall.eraseAll());
-      addComp(clearButton);
+      dialog.addButton(clearFinds.pretty,evt -> findall.eraseAll());
+      this.add(dialog);
 
       list = new GlobalFindall.FindList();
 
       JScrollPane scrollPane = new JScrollPane(list);
-      addComp(scrollPane);
+      add(scrollPane);
+      scrollPane.setPreferredSize(new Dimension(Short.MAX_VALUE,Short.MAX_VALUE));
 
-      // This must be run in the GUI thread
-      SwingUtilities.invokeLater(this::refresh);
+      SwingUtilities.invokeLater(this::refresh);//init contents on construction.
     }
 
     private JPopupMenu makeCCP_Popup() {
