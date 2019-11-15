@@ -149,7 +149,9 @@ public class GlobalFindall {
         try {
           finding.line = area.getLineOfOffset(finding.start);
           //this does some extra stuff:    editor.addLineHighlight(finding.line);
-          exposeLine(finding.line, area.getFoldManager());
+          final FoldManager foldManager = area.getFoldManager();
+          foldManager.ensureOffsetNotInClosedFold(finding.start);
+          foldManager.ensureOffsetNotInClosedFold(finding.end);
           area.addLineHighlight(finding.line, new Color(0, 0, 1, 0.2f));//todo: color changes with each invocation
           Segment segment = new Segment();
           area.getTextLine(finding.line, segment);
@@ -162,20 +164,20 @@ public class GlobalFindall {
       }
     }
   }
-
-  /**
-   * todo: move to a generic place
-   */
-  public static void exposeLine(int line, FoldManager foldManager) {
-    if (foldManager.isLineHidden(line)) {
-      //must open all containing folds, opening the direct containing one apparently doesn't open outer ones.
-      for (int i = 0; i < foldManager.getFoldCount(); i++) {
-        if (foldManager.getFold(i).containsLine(line)) {
-          foldManager.getFold(i).setCollapsed(false);
-        }
-      }
-    }
-  }
+//retained for a few cycles, in case we need it elsewhere.
+//  /**
+//   * todo: move to a generic place
+//   */
+//  public static void exposeLine(int line, FoldManager foldManager) {
+//    if (foldManager.isLineHidden(line)) {
+//      //must open all containing folds, opening the direct containing one apparently doesn't open outer ones.
+//      for (int i = 0; i < foldManager.getFoldCount(); i++) {
+//        if (foldManager.getFold(i).containsLine(line)) {
+//          foldManager.getFold(i).setCollapsed(false);
+//        }
+//      }
+//    }
+//  }
 
   private void addFinding(Finding finding) {
     findings.add(finding);
@@ -400,92 +402,4 @@ public class GlobalFindall {
       });
     }
   }
-//I could not get any variant of the following to actually display anything other than background color. I have no clue as to why this particular JPanel doesn't show nested content.
-  //  private static class FindList extends JPanel {
-  //    static boolean gridly=false;
-  //    private GridBagLayout grid;
-  //    GridBagConstraints cursor;
-  //
-  //    FindList() {
-  //      setPreferredSize(new Dimension(200,200));
-  //    }
-  //
-  //    private static class FindItem {
-  //      Finding finding;//retain for debug
-  //      private JCheckBox picked;
-  //      private JTextField tabname;
-  //      private JTextField linenumber;
-  //      private JTextField image;
-  //
-  //      FindItem(Finding finding) {
-  //        this.finding = finding;
-  //        EditorTab tab = finding.tab.get();
-  //        if (tab != null) {
-  //          picked = new JCheckBox();
-  //          tabname = new JTextField();
-  //          tabname.setText(tab.getSketchFile().getBaseName());
-  //          linenumber = new JTextField();
-  //          linenumber.setText(String.valueOf(finding.line));
-  //          image = new JTextField();
-  //          image.setText(finding.fragment);
-  //        }
-  //      }
-  //
-  //    }
-  //
-  //    private void addHeader(){
-  //      if(gridly) {
-  //        grid.addLayoutComponent(new JLabel("X"), cursor);
-  //        ++cursor.gridx;
-  //        grid.addLayoutComponent(new JLabel("File"), cursor);
-  //        ++cursor.gridx;
-  //        grid.addLayoutComponent(new JLabel("line"), cursor);
-  //        ++cursor.gridx;
-  //        grid.addLayoutComponent(new JLabel("context"), cursor);
-  //        ++cursor.gridy;
-  //        cursor.gridx = 0;
-  //      } else {
-  //        add(new JLabel("X"));
-  //        add(new JLabel("File"));
-  //        add(new JLabel("line"));
-  //        add(new JLabel("context"));
-  //      }
-  //    }
-  //
-  //    private void addItem(FindItem item) {
-  //
-  //      if(gridly)  {
-  //        grid.addLayoutComponent(item.picked, cursor);
-  //        ++cursor.gridx;
-  //        grid.addLayoutComponent(item.tabname, cursor);
-  //        ++cursor.gridx;
-  //        grid.addLayoutComponent(item.linenumber, cursor);
-  //        ++cursor.gridx;
-  //        grid.addLayoutComponent(item.image, cursor);
-  //        ++cursor.gridy;
-  //        cursor.gridx = 0;
-  //      } else {
-  //        add(item.picked);
-  //        add(item.tabname);
-  //        add(item.linenumber);
-  //        add(item.image);
-  //      }
-  //    }
-  //
-  //    public void refresh(ArrayList<Finding> findings) {
-  //
-  //      if(gridly) {
-  //        grid = new GridBagLayout();//because we can't delete all components
-  //        setLayout(grid);
-  //        cursor = new GridBagConstraints();
-  //        addHeader();
-  //        findings.forEach(finding -> addItem(new FindItem(finding)));
-  //        addHeader();
-  //      } else {
-  //        removeAll();
-  //        setLayout(new GridLayout(4,findings.size()));
-  //        findings.forEach(finding -> addItem(new FindItem(finding)));
-  //      }
-  //    }
-  //  }
 }
