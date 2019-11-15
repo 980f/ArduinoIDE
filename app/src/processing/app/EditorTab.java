@@ -29,10 +29,11 @@ import static processing.app.Theme.scale;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.io.IOException;
+import java.util.List;
+import java.util.function.Consumer;
 
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -43,11 +44,7 @@ import javax.swing.ToolTipManager;
 import javax.swing.border.MatteBorder;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Element;
-import javax.swing.text.PlainDocument;
-import javax.swing.text.DefaultCaret;
-import javax.swing.text.Document;
+import javax.swing.text.*;
 
 import org.apache.commons.lang3.StringUtils;
 import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
@@ -191,6 +188,42 @@ public class EditorTab extends JPanel implements SketchFile.TextStorage {
     return textArea;
   }
 
+  private void editInclude() {
+    try {
+      final Segment segment = new Segment();
+      textarea.getTextLine(textarea.getLineOfOffset(textarea.getCaretPosition()), segment);
+      String filename = segment.toString().trim();
+      int start = filename.indexOf("#include");
+      if (start >= 0) {
+        filename = filename.substring(start + "#include".length()).trim();
+        char cutter;
+        switch (filename.charAt(0)) {
+        case '"':
+          cutter = '"';
+          break;
+        case '<':
+          cutter = '>';
+          break;
+        default:
+          return;
+        }
+        int endofname = filename.indexOf(cutter, 1);
+        filename = filename.substring(1, endofname);
+        //find tab with filename
+        editor.selectTab(filename);
+      }
+    } catch (Throwable ignored) {
+
+    }
+  }
+
+  private static JMenuItem addItemToMenu(JPopupMenu menu, String legend, char mnemonic, Consumer<ActionEvent> action) {
+    final JMenuItem item = new JMenuItem(tr(legend), mnemonic);//JMenutItem mnemonic==0 works as no mnemonic
+    item.addActionListener(action::accept);
+    menu.add(item);
+    return item;
+  }
+
   private void configurePopupMenu(final SketchTextArea textarea){
 
     JPopupMenu menu = textarea.getPopupMenu();
@@ -202,61 +235,17 @@ public class EditorTab extends JPanel implements SketchFile.TextStorage {
       throw new NullPointerException("Tool cc.arduino.packages.formatter.AStyle unavailable");
     }
     item.setName("menuToolsAutoFormat");
-
-    menu.add(item);
-    
-    item = new JMenuItem(tr("Comment/Uncomment"), '/');
-    item.addActionListener(new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-          handleCommentUncomment();
-        }
-    });
     menu.add(item);
 
-    item = new JMenuItem(tr("Increase Indent"), ']');
-    item.addActionListener(new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-          handleIndentOutdent(true);
-        }
-    });
-    menu.add(item);
+    addItemToMenu(menu,"Edit Include", '#', e -> editInclude());
 
-    item = new JMenuItem(tr("Decrease Indent"), '[');
-    item.setName("menuDecreaseIndent");
-    item.addActionListener(new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-          handleIndentOutdent(false);
-        }
-    });
-    menu.add(item);
-
-    item = new JMenuItem(tr("Copy for Forum"));
-    item.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent e) {
-        handleDiscourseCopy();
-      }
-    });
-    menu.add(item);
-
-    item = new JMenuItem(tr("Copy as HTML"));
-    item.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent e) {
-        handleHTMLCopy();
-      }
-    });
-    menu.add(item);
-
-    final JMenuItem referenceItem = new JMenuItem(tr("Find in Reference"));
-    referenceItem.addActionListener(editor::handleFindReference);
-    menu.add(referenceItem);  
-
-    final JMenuItem openURLItem = new JMenuItem(tr("Open URL"));
-    openURLItem.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent e) {
-        Base.openURL(e.getActionCommand());
-      }
-    });
-    menu.add(openURLItem);   
+    addItemToMenu(menu, "Comment/Uncomment", '/', e -> handleCommentUncomment());
+    addItemToMenu(menu, "Increase Indent", ']', e -> handleIndentOutdent(true));
+    addItemToMenu(menu, "Decrease Indent", '[', e -> handleIndentOutdent(false));
+    addItemToMenu(menu, "Copy for Forum", '\0', e -> handleDiscourseCopy());
+    addItemToMenu(menu, "Copy as HTML", '\0', e -> handleHTMLCopy());
+    final JMenuItem referenceItem = addItemToMenu(menu, "Find in Reference", '\0', e -> editor.handleFindReference());
+    final JMenuItem openURLItem = addItemToMenu(menu, "Open URL", '\0', e -> Base.openURL(e.getActionCommand()));
     
     menu.addPopupMenuListener(new PopupMenuListener() {
 

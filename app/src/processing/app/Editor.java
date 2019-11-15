@@ -1208,7 +1208,7 @@ public class Editor extends JFrame implements RunnerListener {
     menu.addSeparator();
 
     item = newJMenuItemShift(tr("Find in Reference"), 'F');
-    item.addActionListener(event -> handleFindReference(event));
+    item.addActionListener(event -> handleFindReference());
     menu.add(item);
 
     item = new JMenuItem(tr("Frequently Asked Questions"));
@@ -1517,6 +1517,19 @@ public class Editor extends JFrame implements RunnerListener {
     }
   }
 
+  /** @returns whether tab was found and selected */
+  public boolean selectTab(final String filename) {
+    final List<EditorTab> tabs = getTabs();
+    for (EditorTab tab : tabs) {
+      if (tab.file.getFileName().equalsIgnoreCase(filename)) {
+        selectTab(tab);
+        return true;
+      }
+    }
+    return false;
+  }
+
+
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
   /**
    * Change the currently displayed tab.
@@ -1648,7 +1661,7 @@ public class Editor extends JFrame implements RunnerListener {
     EditorTab tab = new EditorTab(this, file, contents);
     tab.getTextArea().getDocument()
         .addDocumentListener(new DocumentTextChangeListener(
-            () -> updateUndoRedoState()));
+          this::updateUndoRedoState));
     tabs.add(tab);
     reorderTabs();
   }
@@ -1660,7 +1673,7 @@ public class Editor extends JFrame implements RunnerListener {
 
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 
-  void handleFindReference(ActionEvent e) {
+  void handleFindReference() {
     String text = getCurrentTab().getCurrentKeyword();
 
     String referenceFile = base.getPdeKeywords().getReference(text);
@@ -1942,7 +1955,7 @@ public class Editor extends JFrame implements RunnerListener {
     SketchFile current = getCurrentTab().getSketchFile();
     String customFormat = PreferencesData.get("editor.custom_title_format");
     if (customFormat != null && !customFormat.trim().isEmpty()) {
-      Map<String, String> titleMap = new HashMap<String, String>();
+      Map<String, String> titleMap = new HashMap<>();
       titleMap.put("file", current.getFileName());
       String path = sketch.getFolder().getAbsolutePath();
       titleMap.put("folder", path);
@@ -1985,11 +1998,7 @@ public class Editor extends JFrame implements RunnerListener {
       return handleSave2();
 
     } else {
-      SwingUtilities.invokeLater(new Runnable() {
-          public void run() {
-            handleSave2();
-          }
-        });
+      SwingUtilities.invokeLater(this::handleSave2);
     }
     return true;
   }
@@ -2104,14 +2113,6 @@ public class Editor extends JFrame implements RunnerListener {
     return true;
   }
 
-  /**
-   * Called by Sketch &rarr; Export.
-   * Handles calling the export() function on sketch, and
-   * queues all the gui status stuff that comes along with it.
-   * <p/>
-   * Made synchronized to (hopefully) avoid problems of people
-   * hitting export twice, quickly, and horking things up.
-   */
   /**
    * Handles calling the export() function on sketch, and
    * queues all the gui status stuff that comes along with it.
