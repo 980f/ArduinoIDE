@@ -8,11 +8,10 @@ import processing.app.syntax.SketchTextArea;
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.Document;
 import javax.swing.text.Segment;
 import java.awt.*;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.lang.ref.WeakReference;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -68,7 +67,7 @@ public class GlobalFindall {
         editor.selectTab(tab);
         tab.setSelection(finding.start, finding.end);
         if (finding.line >= 0) {//not sure if we can get valid line numbers.
-          tab.goToLine(finding.line);
+          tab.goToLine(finding.line+1);//the +1 was empirically determined, not sure which mechanism decided on 1 based vs 0 based counting here.
         }
         SketchTextArea textarea = tab.getTextArea();
         textarea.getFoldManager().ensureOffsetNotInClosedFold(finding.start);
@@ -306,7 +305,7 @@ public class GlobalFindall {
       dialog.addButton(clearFinds.pretty,evt -> findall.eraseAll());
       this.add(dialog);
 
-      list = new GlobalFindall.FindList();
+      list = findall.new FindList();
 
       JScrollPane scrollPane = new JScrollPane(list);
       add(scrollPane);
@@ -332,22 +331,73 @@ public class GlobalFindall {
     }
   }
 
-  private static class FindList extends JTextArea {
+  private class FindList extends JTextArea {
 
     private void addFinding(Finding finding) {
       EditorTab tab = finding.tab.get();
       if (tab != null) {
         String name = tab.getSketchFile().getBaseName();
-        append(MessageFormat.format("\n[{0}:{1}] {3}", name, finding.line, finding.start, finding.fragment));
+        append(MessageFormat.format("\n[{0}:{1}] {3}", name, finding.line+1, finding.start, finding.fragment));//+1 empirically determined.
       }
     }
 
+    ArrayList<Finding> findings=null;
+
     public void refresh(ArrayList<Finding> findings) {
+      this.findings=findings;
       setText(null);
       setWrapStyleWord(true);
       setLineWrap(true);
       findings.forEach(this::addFinding);
       revalidate();
+    }
+
+    public void navigate(MouseEvent e){
+      if(findings==null){
+        return;
+      }
+      final int position = viewToModel(e.getPoint());
+      setCaretPosition(position);
+      try {
+        int line = getLineOfOffset(position);
+        --line;//until we find out where the leading blank line in the listing window comes from
+        //then find the finding in our list
+        final Finding finding = findings.get(line);
+        gotoFinding(finding);
+      }
+      catch(IndexOutOfBoundsException | BadLocationException ex){
+        ex.printStackTrace();
+      }
+      System.out.println(getCaretPosition());
+    }
+
+    public FindList(){
+      this.addMouseListener(new MouseListener() {
+        @Override
+        public void mouseClicked(final MouseEvent e) {
+          navigate(e);
+        }
+
+        @Override
+        public void mousePressed(final MouseEvent e) {
+
+        }
+
+        @Override
+        public void mouseReleased(final MouseEvent e) {
+
+        }
+
+        @Override
+        public void mouseEntered(final MouseEvent e) {
+
+        }
+
+        @Override
+        public void mouseExited(final MouseEvent e) {
+
+        }
+      });
     }
   }
 //I could not get any variant of the following to actually display anything other than background color. I have no clue as to why this particular JPanel doesn't show nested content.
