@@ -6,6 +6,7 @@ Forked by 980F to:
 # tab reorder for navigating between files, using MRU. Preference: editor.tabs.order.mru=true
 # tree list for picking device type. preference base.boardmenu.nest=true. Especially useful when you have one each of every processor type.
 # created find dialog in a split of the build (EditorConsole) window. Finds all then you can navigate randomly via the mouse. Split controlled by preference editor.dock
+# rightclick menu item to switch to tab related to #include directive on caret line. Todo: use line of right click rather than text entry cursor.
 
 Original readme content follows
 <hr>
