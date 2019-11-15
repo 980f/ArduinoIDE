@@ -4,8 +4,11 @@ Forked by 980F to:
 # added Sketch menu item to reload tabs for when files are added to folder outside of the IDE, presently must restart the IDE.
 # added unbuffered output to Serial Monitor for talking to character oriented protocols vs. line oriented. Preference: serial.unbuffered=true
 # tab reorder for navigating between files, using MRU. Preference: editor.tabs.order.mru=true
-# todo: tree list for picking device type.
-# todo: put find dialog into a split of the build window, I hate playing inverse whack-a-mole with it.
+# tree list for picking device type. preference base.boardmenu.nest=true. Especially useful when you have one each of every processor type.
+# created find dialog in a split of the build (EditorConsole) window. Finds all then you can navigate randomly via the mouse. Split controlled by preference editor.dock
+
+Original readme content follows
+<hr>
 
 Arduino
 <p align="center">

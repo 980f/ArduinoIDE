@@ -6,10 +6,7 @@ import processing.app.EditorTab;
 import processing.app.syntax.SketchTextArea;
 
 import javax.swing.*;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultEditorKit;
-import javax.swing.text.Document;
-import javax.swing.text.Segment;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.lang.ref.WeakReference;
@@ -36,7 +33,7 @@ public class GlobalFindall {
 
   static class Finding {
     public WeakReference<EditorTab> tab;
-
+    /** the line of the text is used for whole line highlighting, but is ambiguous if a find splits lines. */
     public int line;
     /**
      * where text was when we found it, we will not track changes due to edits, we would have to get edit signals from the tab.
@@ -140,7 +137,6 @@ public class GlobalFindall {
             continue;
           }
         }
-
         Finding finding = new Finding();
         finding.tab = new WeakReference<>(tab);
         finding.start = foundAt;

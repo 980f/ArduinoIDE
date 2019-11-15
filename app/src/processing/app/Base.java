@@ -1472,6 +1472,8 @@ public class Base {
     ButtonGroup boardsButtonGroup = new ButtonGroup();
     Map<String, ButtonGroup> buttonGroupsMap = new HashMap<>();
 
+    /* once you have a few packages the picking of a board gets tedious */
+    final boolean nestBoards = PreferencesData.getBoolean("base.boardmenu.nest",false);//false is legacy default.
     // Cycle through all packages
     boolean first = true;
     for (TargetPackage targetPackage : BaseNoGui.packages.values()) {
@@ -1479,28 +1481,41 @@ public class Base {
       for (TargetPlatform targetPlatform : targetPackage.platforms()) {
 
         // Add a separator from the previous platform
-        if (!first)
+        if (!first) {
           boardMenu.add(new JSeparator());
+        }
         first = false;
 
         // Add a title for each platform
         String platformLabel = targetPlatform.getPreferences().get("name");
-        if (platformLabel != null && !targetPlatform.getBoards().isEmpty()) {
-          JMenuItem menuLabel = new JMenuItem(tr(platformLabel));
-          menuLabel.setEnabled(false);
-          boardMenu.add(menuLabel);
+        final Map<String, TargetBoard> boards = targetPlatform.getBoards();
+        if (platformLabel != null && !boards.isEmpty()) {
+          JMenu itemMenu=boardMenu;
+          if(nestBoards){
+            itemMenu=new JMenu(tr(platformLabel));
+            itemMenu.setEnabled(true);
+            boardMenu.add(itemMenu);
+          } else {
+            JMenuItem menuLabel = new JMenuItem(tr(platformLabel));
+            menuLabel.setEnabled(false);
+            boardMenu.add(menuLabel);
+          }
+
+          // Cycle through all boards of this platform
+          for (TargetBoard board : boards.values()) {
+            if (board.getPreferences().get("hide") != null)
+              continue;
+            JMenuItem item = createBoardMenusAndCustomMenus(boardsCustomMenus, menuItemsToClickAfterStartup,
+              buttonGroupsMap,
+              board, targetPlatform, targetPackage);
+
+            itemMenu.add(item);
+
+            boardsButtonGroup.add(item);
+          }
         }
 
-        // Cycle through all boards of this platform
-        for (TargetBoard board : targetPlatform.getBoards().values()) {
-          if (board.getPreferences().get("hide") != null)
-            continue;
-          JMenuItem item = createBoardMenusAndCustomMenus(boardsCustomMenus, menuItemsToClickAfterStartup,
-                  buttonGroupsMap,
-                  board, targetPlatform, targetPackage);
-          boardMenu.add(item);
-          boardsButtonGroup.add(item);
-        }
+
       }
     }
 
