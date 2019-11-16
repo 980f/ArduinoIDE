@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import cc.arduino.files.DeleteFilesOnShutdown;
+import processing.app.debug.TargetBoard;
 import processing.app.helpers.FileUtils;
 
 import static processing.app.I18n.tr;
@@ -27,9 +28,13 @@ public class Sketch {
    */
   private File folder;
 
-  private List<SketchFile> files = new ArrayList<>();
+  private List<SketchFile> files;//is init in constructor, no need to create a list here that then gets discarded.
 
   private File buildPath;
+
+  /** [980f] added these to allow sketch specific things that presently are system wide. */
+  private final File prefsfile;
+  SketchPreferences prefs;
 
   public static final Comparator<SketchFile> CODE_DOCS_COMPARATOR = new Comparator<SketchFile>() {
     @Override
@@ -42,6 +47,7 @@ public class Sketch {
     }
   };
 
+
   /**
    * Create a new SketchData object, and looks at the sketch directory
    * on disk to get populate the list of files in this sketch.
@@ -52,6 +58,16 @@ public class Sketch {
   Sketch(File file) throws IOException {
     folder = file.getParentFile();
     files = listSketchFiles(true);
+    //[980f]
+    prefsfile = Paths.get(folder.getPath(), file.getName() + ".prefs").toFile();
+    if(prefsfile.exists()){
+      prefs=new SketchPreferences();
+      prefs.load(prefsfile);
+      final TargetBoard ownboard = prefs.getBoard();//[980f] here to test the guts, see message below as to where this belongs.
+      if(ownboard!=null){
+        BaseNoGui.selectBoard(ownboard);//each time one is open it yanks the global, need to fix that in the global access.
+      }
+    }
   }
 
   static public File checkSketchFile(File file) {
@@ -136,6 +152,9 @@ public class Sketch {
     for (SketchFile file : getFiles()) {
       if (file.isModified())
         file.save();
+    }
+    if(prefsfile.exists()) {
+      prefs.save(prefsfile);
     }
   }
 

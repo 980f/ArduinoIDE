@@ -1875,14 +1875,13 @@ public class Editor extends JFrame implements RunnerListener {
     File file = Sketch.checkSketchFile(sketchFile);
 
     if (file == null) {
+      //todo: here is where we could insert a .prj concept, that creates links to its list of files into the sketch folder
       if (!fileName.endsWith(".ino") && !fileName.endsWith(".pde")) {
-
         Base.showWarning(tr("Bad file selected"), tr("Arduino can only open its own sketches\n" +
           "and other files ending in .ino or .pde"), null);
         return false;
-
       } else {
-        String properParent = fileName.substring(0, fileName.length() - 4);
+        String properParent = fileName.substring(0, fileName.lastIndexOf('.'));//replaced 4 with source of it. Allows change of allowed extensions without a surprise here.
 
         Object[] options = {tr("OK"), tr("Cancel")};
         String prompt = I18n.format(tr("The file \"{0}\" needs to be inside\n" +

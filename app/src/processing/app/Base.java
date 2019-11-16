@@ -1472,7 +1472,7 @@ public class Base {
     ButtonGroup boardsButtonGroup = new ButtonGroup();
     Map<String, ButtonGroup> buttonGroupsMap = new HashMap<>();
 
-    /* once you have a few packages the picking of a board gets tedious */
+    /* [980f] once you have a few packages the picking of a board gets tedious */
     final boolean nestBoards = PreferencesData.getBoolean("base.boardmenu.nest",false);//false is legacy default.
     // Cycle through all packages
     boolean first = true;
@@ -1550,8 +1550,9 @@ public class Base {
     @SuppressWarnings("serial")
     Action action = new AbstractAction(board.getName()) {
       public void actionPerformed(ActionEvent actionevent) {
-        BaseNoGui.selectBoard((TargetBoard) getValue("b"));
-        filterVisibilityOfSubsequentBoardMenus(boardsCustomMenus, (TargetBoard) getValue("b"), 1);
+        final TargetBoard targetBoard = (TargetBoard) getValue("b");
+        BaseNoGui.selectBoard(targetBoard);
+        filterVisibilityOfSubsequentBoardMenus(boardsCustomMenus, targetBoard, 1);
 
         onBoardOrPortChange();
         rebuildImportMenu(Editor.importMenu);
