@@ -34,8 +34,6 @@ public class SerialMonitor extends AbstractTextMonitor {
 
   private Serial serial;
   private int serialRate;
-  /** [980f] sometimes each keystroke is a command.*/
-  private boolean unbuffered;//todo: add checkbox for controlling this dynamically.
 
   private static final int COMMAND_HISTORY_SIZE = 100;
   private final CommandHistory commandHistory =

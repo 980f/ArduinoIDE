@@ -45,6 +45,10 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
   protected JButton clearButton;
   protected JCheckBox autoscrollBox;
   protected JCheckBox addTimeStampBox;
+  /** [980f] sometimes each keystroke is a command.*/
+  protected boolean unbuffered;
+  protected JCheckBox unbufferedBox;//[980F]
+
   protected JComboBox<String> lineEndings;
   protected JComboBox<String> serialRates;
 
@@ -128,6 +132,7 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
 
     autoscrollBox = new JCheckBox(tr("Autoscroll"), true);
     addTimeStampBox = new JCheckBox(tr("Show timestamp"), false);
+    unbufferedBox=new JCheckBox(tr("Unbuffered"),PreferencesData.getBoolean("serial.unbuffered",false));
 
     noLineEndingAlert = new JLabel(I18n.format(tr("You've pressed {0} but nothing was sent. Should you select a line ending?"), tr("Send")));
     noLineEndingAlert.setToolTipText(noLineEndingAlert.getText());
@@ -155,6 +160,10 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
 
     pane.add(autoscrollBox);
     pane.add(addTimeStampBox);
+    if(PreferencesData.has("serial.unbuffered")){//[980f]
+      pane.add(unbufferedBox);
+      unbufferedBox.addActionListener(e -> unbuffered=unbufferedBox.isSelected());
+    }
     pane.add(Box.createHorizontalGlue());
     pane.add(noLineEndingAlert);
     pane.add(Box.createRigidArea(new Dimension(8, 0)));
@@ -179,6 +188,7 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
     sendButton.setEnabled(enable);
     autoscrollBox.setEnabled(enable);
     addTimeStampBox.setEnabled(enable);
+    unbufferedBox.setEnabled(enable);
     lineEndings.setEnabled(enable);
     serialRates.setEnabled(enable);
   }
