@@ -58,6 +58,23 @@ public class FindList extends JTextArea {
      * record what it looked like, for gui use.
      */
     public String fragment;
+
+    @Override
+    public int hashCode() {
+      return tab!=null?tab.hashCode()+line*57:0;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if(this==obj){
+        return true;
+      }
+      if(obj instanceof Finding){
+        final Finding eff = (Finding) obj;
+        return eff.tab.get()==this.tab.get() && eff.start==this.start;//ignoring the rest for now, may switch to 'line' if we only ever want one report per line.
+      }
+      return false;
+    }
   }
 
   private final Editor editor;

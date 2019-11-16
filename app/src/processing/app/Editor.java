@@ -1735,7 +1735,7 @@ public class Editor extends JFrame implements RunnerListener {
       try {
         removeAllLineHighlights();
         sketchController.build(verbose, saveHex);
-        statusNotice(tr("Done compiling."));
+        statusNotice(tr("Done compiling."));//we don't get to this line if we have any errors!
       } catch (PreferencesMapException e) {
         statusError(I18n.format(
                 tr("Error while compiling: missing '{0}' configuration parameter"),
@@ -1743,6 +1743,11 @@ public class Editor extends JFrame implements RunnerListener {
       } catch (Exception e) {
         status.unprogress();
         statusError(e);
+      } finally {
+        if(errorView!=null){
+          //could defer removal of duplicates to here.
+          SwingUtilities.invokeLater(()-> errorView.refresh(findings));
+        }
       }
 
       status.unprogress();
@@ -2664,8 +2669,12 @@ public class Editor extends JFrame implements RunnerListener {
       final EditorTab tab = tabs.get(findTabIndex(re.getCodeFile()));
       finding.setTab(tab);
       finding.end = finding.start + 20;//have to wait until setTab fixed up .start.
-      findings.add(finding);
-      SwingUtilities.invokeLater(()->errorView.refresh(findings));//compiler is probably on a different thread.
+      //add unique by tab instance and line number
+      int already=findings.indexOf(finding);
+      if(already<0) {
+        findings.add(finding);
+      }
+      //concurrent modification issues, need 'schedule once' SwingUtilities.invokeLater(()->errorView.refresh(findings));//compiler is probably on a different thread.
     }
   }
 
