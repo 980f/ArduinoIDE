@@ -43,8 +43,6 @@ import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URL;
@@ -66,6 +64,8 @@ import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import javax.swing.text.BadLocationException;
 
+import cc.arduino.contributions.libraries.ui.FindList;
+import cc.arduino.contributions.libraries.ui.FindList.Finding;
 import cc.arduino.contributions.libraries.ui.GlobalFindall;
 import org.fife.ui.rsyntaxtextarea.folding.FoldManager;
 
@@ -103,11 +103,13 @@ public class Editor extends JFrame implements RunnerListener {
   public static final int MAX_TIME_AWAITING_FOR_RESUMING_SERIAL_MONITOR = 10000;
 
   final Platform platform;
+  private FindList errorView;
   private JMenu recentSketchesMenu;
   private JMenu programmersMenu;
   private final Box upper;
   private ArrayList<EditorTab> tabs = new ArrayList<>();
   private ArrayList<EditorTab> mru = new ArrayList<>();//[980f] mru tabs for big projects
+  public ArrayList<Finding> findings = new ArrayList<>(); //interesting lines, public to minimize source changes, todo: relocate clear() invocation so that this can be private.
 
   private int currentTabIndex = -1;
 
@@ -216,17 +218,17 @@ public class Editor extends JFrame implements RunnerListener {
 
   private FindReplace find;
 
-  Runnable runHandler;
-  Runnable presentHandler;
-  private Runnable runAndSaveHandler;
-  private Runnable presentAndSaveHandler;
+  BuildHandler runHandler;
+  BuildHandler presentHandler;
+  private BuildHandler runAndSaveHandler;
+  private BuildHandler presentAndSaveHandler;
   private UploadHandler uploadHandler;
   private UploadHandler uploadUsingProgrammerHandler;
-  private Runnable timeoutUploadHandler;
+  private TimeoutUploadHandler timeoutUploadHandler;
 
-  private Map<String, Tool> internalToolCache = new HashMap<String, Tool>();
+  private Map<String, Tool> internalToolCache = new HashMap<>();
 
-  public Editor(Base ibase, File file, int[] storedLocation, int[] defaultLocation, Platform platform) throws Exception {
+  public Editor(Base ibase, File file, int[] storedLocation, int[] defaultLocation, Platform platform) {
     super("Arduino");
     this.base = ibase;
     this.platform = platform;
@@ -322,6 +324,9 @@ public class Editor extends JFrame implements RunnerListener {
       dock = new JTabbedPane();
       dock.addTab(tr("Console"), consolePanel);
       dock.addTab(tr("Finder"), new GlobalFindall.FindAllGui(new GlobalFindall(this)));
+      errorView = new FindList(this);
+      dock.addTab(tr("Errors"), errorView);
+
       //todo: add serial monitor likewise.
       dockslot=dock;
     } else {
@@ -612,7 +617,7 @@ public class Editor extends JFrame implements RunnerListener {
 
     base.rebuildRecentSketchesMenuItems();
     recentSketchesMenu = new JMenu(tr("Open Recent"));
-    SwingUtilities.invokeLater(() -> rebuildRecentSketchesMenu());
+    SwingUtilities.invokeLater(this::rebuildRecentSketchesMenu);
     fileMenu.add(recentSketchesMenu);
 
     if (sketchbookMenu == null) {
@@ -836,15 +841,13 @@ public class Editor extends JFrame implements RunnerListener {
 
     Map<String, JMenuItem> toolItems = new HashMap<>();
 
-    File[] folders = sourceFolder.listFiles(new FileFilter() {
-      public boolean accept(File folder) {
-        if (folder.isDirectory()) {
-          //System.out.println("checking " + folder);
-          File subfolder = new File(folder, "tool");
-          return subfolder.exists();
-        }
-        return false;
+    File[] folders = sourceFolder.listFiles(folder -> {
+      if (folder.isDirectory()) {
+        //System.out.println("checking " + folder);
+        File subfolder = new File(folder, "tool");
+        return subfolder.exists();
       }
+      return false;
     });
 
     if (folders == null || folders.length == 0) {
@@ -859,12 +862,8 @@ public class Editor extends JFrame implements RunnerListener {
         //urlList.add(toolDirectory.toURL());
 
         // add .jar files to classpath
-        File[] archives = toolDirectory.listFiles(new FilenameFilter() {
-          public boolean accept(File dir, String name) {
-            return (name.toLowerCase().endsWith(".jar") ||
-              name.toLowerCase().endsWith(".zip"));
-          }
-        });
+        File[] archives = toolDirectory.listFiles((dir, name) -> (name.toLowerCase().endsWith(".jar") ||
+          name.toLowerCase().endsWith(".zip")));
 
         URL[] urlList = new URL[archives.length];
         for (int j = 0; j < urlList.length; j++) {
@@ -937,9 +936,7 @@ public class Editor extends JFrame implements RunnerListener {
     // Class file to search for
     String classFileName = "/" + base + ".class";
 
-    ZipFile zipFile = null;
-    try {
-      zipFile = new ZipFile(file);
+    try (ZipFile zipFile = new ZipFile(file)) {
       Enumeration<?> entries = zipFile.entries();
       while (entries.hasMoreElements()) {
         ZipEntry entry = (ZipEntry) entries.nextElement();
@@ -959,16 +956,9 @@ public class Editor extends JFrame implements RunnerListener {
     } catch (IOException e) {
       //System.err.println("Ignoring " + filename + " (" + e.getMessage() + ")");
       e.printStackTrace();
-    } finally {
-      if (zipFile != null) {
-        try {
-           zipFile.close();
-         } catch (IOException e) {
-           // noop
-         }
-       }
-     }
-     return null;
+    }
+    // noop
+    return null;
    }
 
   public void updateKeywords(PdeKeywords keywords) {
@@ -1666,7 +1656,7 @@ public class Editor extends JFrame implements RunnerListener {
     reorderTabs();
   }
 
-  protected void removeTab(SketchFile file) throws IOException {
+  protected void removeTab(SketchFile file) {
     int index = findTabIndex(file);
     tabs.remove(index);
   }
@@ -2483,11 +2473,9 @@ public class Editor extends JFrame implements RunnerListener {
       } catch (SerialNotFoundException e) {
         SwingUtilities.invokeLater(() -> statusError(tr("Error while burning bootloader: please select a serial port.")));
       } catch (PreferencesMapException e) {
-        SwingUtilities.invokeLater(() -> {
-          statusError(I18n.format(
-            tr("Error while burning bootloader: missing '{0}' configuration parameter"),
-            e.getMessage()));
-        });
+        SwingUtilities.invokeLater(() -> statusError(I18n.format(
+          tr("Error while burning bootloader: missing '{0}' configuration parameter"),
+          e.getMessage())));
       } catch (RunnerException e) {
         SwingUtilities.invokeLater(() -> statusError(e.getMessage()));
       } catch (Exception e) {
@@ -2621,7 +2609,8 @@ public class Editor extends JFrame implements RunnerListener {
 
     if (e instanceof RunnerException) {
       RunnerException re = (RunnerException) e;
-      //[980f]: todo add intercept here to fill a GlobalFindall gui.
+
+      noteRunError(re);
       if (re.hasCodeFile()) {
         selectTab(findTabIndex(re.getCodeFile()));
       }
@@ -2667,6 +2656,18 @@ public class Editor extends JFrame implements RunnerListener {
 //    e.printStackTrace();
   }
 
+  private void noteRunError(final RunnerException re) {
+    if (errorView != null) {//[980f]: then populate it
+      final Finding finding = new Finding();
+      finding.line = re.getCodeLine();
+      finding.start = ~re.getCodeColumn();//~ is indication to setTab that this is from start of line vs start of file.
+      final EditorTab tab = tabs.get(findTabIndex(re.getCodeFile()));
+      finding.setTab(tab);
+      finding.end = finding.start + 20;//have to wait until setTab fixed up .start.
+      findings.add(finding);
+      SwingUtilities.invokeLater(()->errorView.refresh(findings));//compiler is probably on a different thread.
+    }
+  }
 
   /**
    * Show a notice message in the editor status bar.

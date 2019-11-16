@@ -1,3 +1,12 @@
+/** Copyright 2019 Andrew L. Heilveil (github/980f)
+ * (M.I.T. License)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * */
 package cc.arduino.contributions.libraries.ui;
 
 import org.fife.ui.rsyntaxtextarea.folding.FoldManager;
@@ -6,14 +15,16 @@ import processing.app.EditorTab;
 import processing.app.syntax.SketchTextArea;
 
 import javax.swing.*;
-import javax.swing.text.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.Segment;
 import java.awt.*;
 import java.awt.event.*;
 import java.lang.ref.WeakReference;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import static cc.arduino.contributions.libraries.ui.FindList.*;
 import static cc.arduino.contributions.libraries.ui.GlobalFindall.FindAllGui.OptionsName.*;
 import static com.sun.java.accessibility.util.AWTEventMonitor.addWindowListener;
 import static processing.app.I18n.tr;
@@ -31,23 +42,7 @@ public class GlobalFindall {
     public String term = "if";
   }
 
-  static class Finding {
-    public WeakReference<EditorTab> tab;
-    /** the line of the text is used for whole line highlighting, but is ambiguous if a find splits lines. */
-    public int line;
-    /**
-     * where text was when we found it, we will not track changes due to edits, we would have to get edit signals from the tab.
-     */
-    public int start;
-    /**
-     * record the end in case we change the search term without clearing previous finds
-     */
-    public int end;
-    /**
-     * record what it looked like, for gui use.
-     */
-    public String fragment;
-  }
+
 
   public ArrayList<Finding> findings = new ArrayList<>();
 
@@ -57,21 +52,7 @@ public class GlobalFindall {
     refreshGui();
   }
 
-  public void gotoFinding(Finding finding) {
-    if (finding != null) {
-      EditorTab tab = finding.tab.get();
-      if (tab != null) {
-        editor.selectTab(tab);
-        tab.setSelection(finding.start, finding.end);
-        if (finding.line >= 0) {//not sure if we can get valid line numbers.
-          tab.goToLine(finding.line+1);//the +1 was empirically determined, not sure which mechanism decided on 1 based vs 0 based counting here.
-        }
-        SketchTextArea textarea = tab.getTextArea();
-        textarea.getFoldManager().ensureOffsetNotInClosedFold(finding.start);
-        textarea.getCaret().setSelectionVisible(true);
-      }
-    }
-  }
+
 
   /**
    * todo: is search per editor or per human?
@@ -138,23 +119,10 @@ public class GlobalFindall {
           }
         }
         Finding finding = new Finding();
-        finding.tab = new WeakReference<>(tab);
         finding.start = foundAt;
         finding.end = foundAt + length;
+        finding.setTab(tab);
         addFinding(finding);
-        try {
-          finding.line = area.getLineOfOffset(finding.start);
-          //this does some extra stuff:    editor.addLineHighlight(finding.line);
-          final FoldManager foldManager = area.getFoldManager();
-          foldManager.ensureOffsetNotInClosedFold(finding.start);
-          foldManager.ensureOffsetNotInClosedFold(finding.end);
-          area.addLineHighlight(finding.line, new Color(0, 0, 1, 0.2f));//todo: color changes with each invocation
-          Segment segment = new Segment();
-          area.getTextLine(finding.line, segment);
-          finding.fragment = segment.toString().trim();
-        } catch (BadLocationException e) {
-          finding.line = -1;
-        }
       } else {
         break;
       }
@@ -203,7 +171,7 @@ public class GlobalFindall {
     private JCheckBox searchAllFilesBox;
     private JCheckBox ignoreCaseBox;
     private JCheckBox wordlyBox;
-    GlobalFindall.FindList list;
+    FindList list;
 
     /**
      * called when a find has been refreshed
@@ -278,7 +246,7 @@ public class GlobalFindall {
       this.findall = findall;
       findall.linkRefresh(this);
 
-      setLayout(new BoxLayout(this,1));//over under
+      setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
       final EzPanel dialog = new EzPanel();
       findField=dialog.addTextEntry(findText.pretty,20);
@@ -303,7 +271,7 @@ public class GlobalFindall {
       dialog.addButton(clearFinds.pretty,evt -> findall.eraseAll());
       this.add(dialog);
 
-      list = findall.new FindList();
+      list = new FindList(findall.editor);
 
       JScrollPane scrollPane = new JScrollPane(list);
       add(scrollPane);
@@ -326,76 +294,6 @@ public class GlobalFindall {
       paste.putValue(Action.NAME, tr("Paste"));
       menu.add(paste);
       return menu;
-    }
-  }
-
-  private class FindList extends JTextArea {
-
-    private void addFinding(Finding finding) {
-      EditorTab tab = finding.tab.get();
-      if (tab != null) {
-        String name = tab.getSketchFile().getBaseName();
-        append(MessageFormat.format("\n[{0}:{1}] {3}", name, finding.line+1, finding.start, finding.fragment));//+1 empirically determined.
-      }
-    }
-
-    ArrayList<Finding> findings=null;
-
-    public void refresh(ArrayList<Finding> findings) {
-      this.findings=findings;
-      setText(null);
-      setWrapStyleWord(true);
-      setLineWrap(true);
-      findings.forEach(this::addFinding);
-      revalidate();
-    }
-
-    public void navigate(MouseEvent e){
-      if(findings==null){
-        return;
-      }
-      final int position = viewToModel(e.getPoint());
-      setCaretPosition(position);
-      try {
-        int line = getLineOfOffset(position);
-        --line;//until we find out where the leading blank line in the listing window comes from
-        //then find the finding in our list
-        final Finding finding = findings.get(line);
-        gotoFinding(finding);
-      }
-      catch(IndexOutOfBoundsException | BadLocationException ex){
-        ex.printStackTrace();
-      }
-      System.out.println(getCaretPosition());
-    }
-
-    public FindList(){
-      this.addMouseListener(new MouseListener() {
-        @Override
-        public void mouseClicked(final MouseEvent e) {
-          navigate(e);
-        }
-
-        @Override
-        public void mousePressed(final MouseEvent e) {
-
-        }
-
-        @Override
-        public void mouseReleased(final MouseEvent e) {
-
-        }
-
-        @Override
-        public void mouseEntered(final MouseEvent e) {
-
-        }
-
-        @Override
-        public void mouseExited(final MouseEvent e) {
-
-        }
-      });
     }
   }
 }

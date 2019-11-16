@@ -661,7 +661,10 @@ public class SketchController {
     }
 
     try {
-      return new Compiler(pathToSketch, sketch).build(editor.status.getCompilerProgressListeners(), save);
+      final Compiler compiler = new Compiler(pathToSketch, sketch);
+      editor.findings.clear();//todo: move this clear to compilation activation
+      compiler.addErrorListener(editor::statusError);
+      return compiler.build(editor.status.getCompilerProgressListeners(), save);
     } finally {
       // Make sure we clean up any temporary sketch copy
       if (deleteTemp)

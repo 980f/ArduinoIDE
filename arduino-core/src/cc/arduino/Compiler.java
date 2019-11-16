@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -124,6 +125,12 @@ public class Compiler implements MessageConsumer {
     tr("Verifying and uploading...");
   }
 
+  private Consumer<RunnerException> errorTracker;
+
+  public void addErrorListener(final Consumer<RunnerException> errorTracker) {
+    this.errorTracker=errorTracker;
+  }
+
   enum BuilderAction {
     COMPILE("-compile"), DUMP_PREFS("-dump-prefs");
 
@@ -135,6 +142,7 @@ public class Compiler implements MessageConsumer {
   }
 
   private static final Pattern ERROR_FORMAT = Pattern.compile("(.+\\.\\w+):(\\d+)(:\\d+)*:\\s*(fatal)?\\s*error:\\s*(.*)\\s*", Pattern.MULTILINE | Pattern.DOTALL);
+  private static final Pattern WARNING_FORMAT = Pattern.compile("(.+\\.\\w+):(\\d+)(:\\d+)*:\\s*warning:\\s*(.*)\\s*", Pattern.MULTILINE | Pattern.DOTALL);
 
   private final File pathToSketch;
   private final Sketch sketch;
@@ -261,7 +269,7 @@ public class Compiler implements MessageConsumer {
     cmd.add(buildPath);
     cmd.add("-warnings=" + PreferencesData.get("compiler.warning_level"));
 
-    if (PreferencesData.getBoolean("compiler.cache_core") == true && buildCache != null) {
+    if (PreferencesData.getBoolean("compiler.cache_core") && buildCache != null) {
       cmd.add("-build-cache");
       cmd.add(buildCache.getAbsolutePath());
     }
@@ -318,7 +326,7 @@ public class Compiler implements MessageConsumer {
     }
 
     if (exception != null)
-      throw exception;
+      throw exception; //this is the first exception encountered and is thrown after compilation is completed.
 
     if (result > 1) {
       System.err.println(I18n.format(tr("{0} returned {1}"), cmd.get(0), result));
@@ -514,6 +522,10 @@ public class Compiler implements MessageConsumer {
 
     String[] pieces = PApplet.match(s, ERROR_FORMAT);
 
+    if(pieces == null && PreferencesData.getBoolean("compiler.show.warnings",false)){//[980f]
+      pieces = PApplet.match(s, WARNING_FORMAT);
+    }
+
     if (pieces != null) {
       String msg = "";
       int errorIdx = pieces.length - 1;
@@ -527,56 +539,50 @@ public class Compiler implements MessageConsumer {
         col = -1;
       }
 
-      if (error.trim().equals("SPI.h: No such file or directory")) {
+      switch (error.trim()) {
+      case "SPI.h: No such file or directory":
         error = tr("Please import the SPI library from the Sketch > Import Library menu.");
         msg = tr("\nAs of Arduino 0019, the Ethernet library depends on the SPI library." +
           "\nYou appear to be using it or another library that depends on the SPI library.\n\n");
-      }
-
-      if (error.trim().equals("'BYTE' was not declared in this scope")) {
+        break;
+      case "'BYTE' was not declared in this scope":
         error = tr("The 'BYTE' keyword is no longer supported.");
         msg = tr("\nAs of Arduino 1.0, the 'BYTE' keyword is no longer supported." +
           "\nPlease use Serial.write() instead.\n\n");
-      }
-
-      if (error.trim().equals("no matching function for call to 'Server::Server(int)'")) {
+        break;
+      case "no matching function for call to 'Server::Server(int)'":
         error = tr("The Server class has been renamed EthernetServer.");
         msg = tr("\nAs of Arduino 1.0, the Server class in the Ethernet library " +
           "has been renamed to EthernetServer.\n\n");
-      }
-
-      if (error.trim().equals("no matching function for call to 'Client::Client(byte [4], int)'")) {
+        break;
+      case "no matching function for call to 'Client::Client(byte [4], int)'":
         error = tr("The Client class has been renamed EthernetClient.");
         msg = tr("\nAs of Arduino 1.0, the Client class in the Ethernet library " +
           "has been renamed to EthernetClient.\n\n");
-      }
-
-      if (error.trim().equals("'Udp' was not declared in this scope")) {
+        break;
+      case "'Udp' was not declared in this scope":
         error = tr("The Udp class has been renamed EthernetUdp.");
         msg = tr("\nAs of Arduino 1.0, the Udp class in the Ethernet library " +
           "has been renamed to EthernetUdp.\n\n");
-      }
-
-      if (error.trim().equals("'class TwoWire' has no member named 'send'")) {
+        break;
+      case "'class TwoWire' has no member named 'send'":
         error = tr("Wire.send() has been renamed Wire.write().");
         msg = tr("\nAs of Arduino 1.0, the Wire.send() function was renamed " +
           "to Wire.write() for consistency with other libraries.\n\n");
-      }
-
-      if (error.trim().equals("'class TwoWire' has no member named 'receive'")) {
+        break;
+      case "'class TwoWire' has no member named 'receive'":
         error = tr("Wire.receive() has been renamed Wire.read().");
         msg = tr("\nAs of Arduino 1.0, the Wire.receive() function was renamed " +
           "to Wire.read() for consistency with other libraries.\n\n");
-      }
-
-      if (error.trim().equals("'Mouse' was not declared in this scope")) {
+        break;
+      case "'Mouse' was not declared in this scope":
         error = tr("'Mouse' not found. Does your sketch include the line '#include <Mouse.h>'?");
         //msg = _("\nThe 'Mouse' class is only supported on the Arduino Leonardo.\n\n");
-      }
-
-      if (error.trim().equals("'Keyboard' was not declared in this scope")) {
+        break;
+      case "'Keyboard' was not declared in this scope":
         error = tr("'Keyboard' not found. Does your sketch include the line '#include <Keyboard.h>'?");
         //msg = _("\nThe 'Keyboard' class is only supported on the Arduino Leonardo.\n\n");
+        break;
       }
 
       RunnerException ex = placeException(error, filename, line - 1, col);
@@ -598,6 +604,14 @@ public class Compiler implements MessageConsumer {
           exception.hideStackTrace();
         }
       }
+
+      if(ex!=null){
+        if(errorTracker!=null) {
+          ex.hideStackTrace();
+          errorTracker.accept(ex);
+        }
+
+      }
     }
 
     if (s.contains("undefined reference to `SPIClass::begin()'") &&
@@ -616,8 +630,9 @@ public class Compiler implements MessageConsumer {
   }
 
   private RunnerException placeException(String message, String fileName, int line, int col) {
+    final String messageFilename = new File(fileName).getName();//not trusting compiler to do loop invariant optimization.
     for (SketchFile file : sketch.getFiles()) {
-      if (new File(fileName).getName().equals(file.getFileName())) {
+      if (messageFilename.equals(file.getFileName())) {
         return new RunnerException(message, file, line, col);
       }
     }
