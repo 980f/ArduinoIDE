@@ -116,7 +116,8 @@ public class Serial implements SerialPortEventListener {
     }
   }
 
-  private Serial(String iname, int irate, char iparity, int idatabits, float istopbits, boolean setRTS, boolean setDTR) throws SerialException {
+  /** made public so that all params can be dynamically customized, not just the 2 basic ones. */
+  public Serial(String iname, int irate, char iparity, int idatabits, float istopbits, boolean setRTS, boolean setDTR) throws SerialException {
     //if (port != null) port.close();
     //this.parent = parent;
     //parent.attach(this);

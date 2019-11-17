@@ -41,7 +41,7 @@ public class SerialMonitor extends AbstractTextMonitor {
 
   public SerialMonitor(BoardPort port) {
     super(port);
-    unbuffered=PreferencesData.getBoolean("serial.unbuffered",false);
+    unbuffered = PreferencesData.getBoolean("serial.unbuffered",false);
     serialRate = PreferencesData.getInteger("serial.debug_rate");
     serialRates.setSelectedItem(serialRate + " " + tr("baud"));
     onSerialRateChange((ActionEvent event) -> {
