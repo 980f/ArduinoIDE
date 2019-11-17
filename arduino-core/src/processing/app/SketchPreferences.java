@@ -48,11 +48,14 @@ public class SketchPreferences {
   }
 
   public void load(final File prefsfile) throws IOException {
+    if(prefs==null){
+      prefs=new PreferencesMap();
+    }
     prefs.load(prefsfile);
   }
 
   public void save(final File prefsfile) {
-    save(prefsfile,prefs,false);//sorted:false: we don't care about order so keep what the user gave us.
+    save(prefsfile, prefs,false);//sorted:false: we don't care about order so keep what the user gave us.
   }
 
   public static TargetBoard getBoard(PreferencesMap prefs) {

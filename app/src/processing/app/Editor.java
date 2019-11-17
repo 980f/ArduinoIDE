@@ -2696,10 +2696,12 @@ public class Editor extends JFrame implements RunnerListener {
 
   protected void onBoardOrPortChange() {
     TargetBoard board = BaseNoGui.getTargetBoard();
-    if (board != null)
+    if (board != null) {
       lineStatus.setBoardName(board.getName());
-    else
+      sketch.prefs.setBoard(board);
+    } else {
       lineStatus.setBoardName("-");
+    }
     lineStatus.setPort(PreferencesData.get("serial.port"));
     lineStatus.repaint();
   }

@@ -32,39 +32,41 @@ public class Sketch {
 
   private File buildPath;
 
-  /** [980f] added these to allow sketch specific things that presently are system wide. */
+  /**
+   * [980f] added these to allow sketch specific things that presently are system wide.
+   */
   private final File prefsfile;
   SketchPreferences prefs;
 
   public static final Comparator<SketchFile> CODE_DOCS_COMPARATOR = new Comparator<SketchFile>() {
     @Override
     public int compare(SketchFile x, SketchFile y) {
-      if (x.isPrimary() && !y.isPrimary())
+      if (x.isPrimary() && !y.isPrimary()) {
         return -1;
-      if (y.isPrimary() && !x.isPrimary())
+      }
+      if (y.isPrimary() && !x.isPrimary()) {
         return 1;
+      }
       return x.getFileName().compareTo(y.getFileName());
     }
   };
-
 
   /**
    * Create a new SketchData object, and looks at the sketch directory
    * on disk to get populate the list of files in this sketch.
    *
-   * @param file
-   *          Any file inside the sketch directory.
+   * @param file Any file inside the sketch directory.
    */
   Sketch(File file) throws IOException {
     folder = file.getParentFile();
     files = listSketchFiles(true);
     //[980f]
-    prefsfile = Paths.get(folder.getPath(), file.getName() + ".prefs").toFile();
-    if(prefsfile.exists()){
-      prefs=new SketchPreferences();
+    prefsfile =  Paths.get(folder.getAbsolutePath(), folder.getName() + ".prefs").toFile();
+    if (prefsfile.exists()) {
+      prefs = new SketchPreferences();
       prefs.load(prefsfile);
       final TargetBoard ownboard = prefs.getBoard();//[980f] here to test the guts, see message below as to where this belongs.
-      if(ownboard!=null){
+      if (ownboard != null) {
         BaseNoGui.selectBoard(ownboard);//each time one is open it yanks the global, need to fix that in the global access.
       }
     }
@@ -81,14 +83,17 @@ public class Sketch {
     String inoName = parentName + ".ino";
     File altInoFile = new File(parent, inoName);
 
-    if (pdeName.equals(fileName) || inoName.equals(fileName))
+    if (pdeName.equals(fileName) || inoName.equals(fileName)) {
       return file;
+    }
 
-    if (altPdeFile.exists())
+    if (altPdeFile.exists()) {
       return altPdeFile;
+    }
 
-    if (altInoFile.exists())
+    if (altInoFile.exists()) {
       return altInoFile;
+    }
 
     return null;
   }
@@ -99,7 +104,7 @@ public class Sketch {
    * the contents of the files, just their presence.
    *
    * @return true when the list of files was changed, false when it was
-   *         not.
+   * not.
    */
   public boolean reload() throws IOException {
     List<SketchFile> reloaded = listSketchFiles(false);
@@ -116,8 +121,7 @@ public class Sketch {
    * returns a filtered and sorted list of File objects ready to be
    * passed to the SketchFile constructor.
    *
-   * @param showWarnings
-   *          When true, any invalid filenames will show a warning.
+   * @param showWarnings When true, any invalid filenames will show a warning.
    */
   private List<SketchFile> listSketchFiles(boolean showWarnings) throws IOException {
     Set<SketchFile> result = new TreeSet<>(CODE_DOCS_COMPARATOR);
@@ -129,8 +133,9 @@ public class Sketch {
       }
     }
 
-    if (result.size() == 0)
+    if (result.size() == 0) {
       throw new IOException(tr("No valid code files found"));
+    }
 
     return new ArrayList<>(result);
   }
@@ -150,10 +155,11 @@ public class Sketch {
 
   public void save() throws IOException {
     for (SketchFile file : getFiles()) {
-      if (file.isModified())
+      if (file.isModified()) {
         file.save();
+      }
     }
-    if(prefsfile.exists()) {
+    if (prefsfile.exists()) {
       prefs.save(prefsfile);
     }
   }
@@ -210,8 +216,9 @@ public class Sketch {
   }
 
   protected void removeFile(SketchFile which) {
-    if (!files.remove(which))
+    if (!files.remove(which)) {
       System.err.println("removeCode: internal error.. could not find code");
+    }
   }
 
   public String getName() {
@@ -231,8 +238,9 @@ public class Sketch {
    */
   public boolean isModified() {
     for (SketchFile file : files) {
-      if (file.isModified())
+      if (file.isModified()) {
         return true;
+      }
     }
     return false;
   }
@@ -244,8 +252,9 @@ public class Sketch {
   public int findFileIndex(File filename) {
     int i = 0;
     for (SketchFile file : files) {
-      if (file.getFile().equals(filename))
+      if (file.getFile().equals(filename)) {
         return i;
+      }
       i++;
     }
     return -1;
@@ -269,8 +278,9 @@ public class Sketch {
     // If the folder is actually renamed (as opposed to moved somewhere
     // else), check for conflicts using the new filename, but the
     // existing folder name.
-    if (!newFolder.getName().equals(folder.getName()))
+    if (!newFolder.getName().equals(folder.getName())) {
       checkNewFilename(new File(folder, newPrimary));
+    }
 
     return new File(newFolder, newPrimary);
   }
@@ -280,9 +290,8 @@ public class Sketch {
    * the file already exists in this sketch. If so, an IOEXception is
    * thrown.
    *
-   * @param newFile
-   *          The filename of the new file, or the new name for an
-   *          existing file.
+   * @param newFile The filename of the new file, or the new name for an
+   *                existing file.
    */
   protected void checkNewFilename(File newFile) throws IOException {
     // Verify that the sketch doesn't have a filem with the new name
@@ -291,7 +300,6 @@ public class Sketch {
       String msg = I18n.format(tr("The sketch already contains a file named \"{0}\""), newFile.getName());
       throw new IOException(msg);
     }
-
   }
 
   /**
@@ -300,32 +308,30 @@ public class Sketch {
    * This operation does not *save* the sketch, so the files on disk are
    * moved, but not modified.
    *
-   * @param newFolder
-   *          The new folder name for this sketch. The new primary
-   *          file's name will be derived from this.
-   *
-   * @throws IOException
-   *           When a problem occurs. The error message should be
-   *           already translated.
+   * @param newFolder The new folder name for this sketch. The new primary
+   *                  file's name will be derived from this.
+   * @throws IOException When a problem occurs. The error message should be
+   *                     already translated.
    */
   public void renameTo(File newFolder) throws IOException {
     // Check intended rename (throws if there is a problem)
     File newPrimary = checkNewFoldername(newFolder);
 
     // Rename the sketch folder
-    if (!getFolder().renameTo(newFolder))
+    if (!getFolder().renameTo(newFolder)) {
       throw new IOException(tr("Failed to rename sketch folder"));
+    }
 
     folder = newFolder;
 
     // Tell each file about its new name
-    for (SketchFile file : files)
+    for (SketchFile file : files) {
       file.renamedTo(new File(newFolder, file.getFileName()));
+    }
 
     // And finally, rename the primary file
     getPrimaryFile().renameTo(newPrimary.getName());
   }
-
 
   public SketchFile addFile(String newName) throws IOException {
     // Check the name will not cause any conflicts
@@ -344,13 +350,10 @@ public class Sketch {
    * Save this sketch under the new name given. Unlike renameTo(), this
    * leaves the existing sketch in place.
    *
-   * @param newFolder
-   *          The new folder name for this sketch. The new primary
-   *          file's name will be derived from this.
-   *
-   * @throws IOException
-   *           When a problem occurs. The error message should be
-   *           already translated.
+   * @param newFolder The new folder name for this sketch. The new primary
+   *                  file's name will be derived from this.
+   * @throws IOException When a problem occurs. The error message should be
+   *                     already translated.
    */
   public void saveAs(File newFolder) throws IOException {
     // Check intented rename (throws if there is a problem)
@@ -364,12 +367,12 @@ public class Sketch {
 
     // Save the files to their new location
     for (SketchFile file : files) {
-      if (file.isPrimary())
+      if (file.isPrimary()) {
         file.saveAs(newPrimary);
-      else
+      } else {
         file.saveAs(new File(newFolder, file.getFileName()));
+      }
     }
-
 
     // Copy the data folder (this may take a while.. add progress bar?)
     if (getDataFolder().exists()) {
@@ -382,10 +385,9 @@ public class Sketch {
       // Copy the data files into the new folder
       FileUtils.copy(getDataFolder(), newDataFolder);
     }
-    
+
     // Change folder to the new folder
     folder = newFolder;
-    
   }
 
   /**
