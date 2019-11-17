@@ -2697,8 +2697,14 @@ public class Editor extends JFrame implements RunnerListener {
   protected void onBoardOrPortChange() {
     TargetBoard board = BaseNoGui.getTargetBoard();
     if (board != null) {
-      lineStatus.setBoardName(board.getName());
-      sketch.prefs.setBoard(board);
+      if(sketch.prefs!=null){
+        //todo: only if active editor, until then we need to start a different instance of the whole IDE if we want simultaneous development.
+        //IE the present multi-sketch architecture presumes you are swapping programs for one board.
+        sketch.prefs.setBoard(board);
+      } else {
+        lineStatus.setBoardName(board.getName());
+      }
+
     } else {
       lineStatus.setBoardName("-");
     }

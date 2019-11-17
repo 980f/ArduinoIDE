@@ -36,7 +36,7 @@ public class Sketch {
    * [980f] added these to allow sketch specific things that presently are system wide.
    */
   private final File prefsfile;
-  SketchPreferences prefs;
+  public SketchPreferences prefs;
 
   public static final Comparator<SketchFile> CODE_DOCS_COMPARATOR = new Comparator<SketchFile>() {
     @Override
@@ -70,6 +70,10 @@ public class Sketch {
         BaseNoGui.selectBoard(ownboard);//each time one is open it yanks the global, need to fix that in the global access.
       }
     }
+  }
+
+  public TargetBoard getOwnBoard() {
+    return prefs==null?null:prefs.getBoard();
   }
 
   static public File checkSketchFile(File file) {
@@ -396,4 +400,6 @@ public class Sketch {
   void delete() {
     FileUtils.recursiveDelete(folder);
   }
+
+
 }

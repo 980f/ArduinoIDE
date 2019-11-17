@@ -171,7 +171,10 @@ public class Compiler implements MessageConsumer {
     this.buildPath = sketch.getBuildPath().getAbsolutePath();
     this.buildCache = BaseNoGui.getCachePath();
 
-    TargetBoard board = BaseNoGui.getTargetBoard();
+    TargetBoard
+      board = sketch.getOwnBoard(); //[980f] see if sketch has own board (indented strangely to make easy to remove)
+    if(board == null)
+      board = BaseNoGui.getTargetBoard();
     if (board == null) {
       throw new RunnerException("Board is not selected");
     }
