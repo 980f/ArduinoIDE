@@ -90,7 +90,8 @@ public class EditorStatus extends JPanel {
   private JTextField editField;
   private JProgressBar progressBar;
   private JButton copyErrorButton;
-  
+  private JButton clearButton;
+
   private ArrayList<CompilerProgressListener> compilerProgressListeners;
 
   public EditorStatus(Editor editor) {
@@ -358,6 +359,13 @@ public class EditorStatus extends JPanel {
       if (unixclipboard != null) {
         unixclipboard.setContents(data, null);
       }
+    });
+
+    clearButton= new JButton(tr("Clear messages"));//[980f] sometimes I want that stuff to go away.
+    add(clearButton);
+    clearButton.setVisible(true);//todo: isn't this default state?
+    copyErrorButton.addActionListener(e->{
+      editField.setText("");
     });
   }
 
