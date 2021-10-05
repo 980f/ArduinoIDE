@@ -2,7 +2,9 @@ package processing.app;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,17 +40,14 @@ public class Sketch {
   private final File prefsfile;
   public SketchPreferences prefs;
 
-  public static final Comparator<SketchFile> CODE_DOCS_COMPARATOR = new Comparator<SketchFile>() {
-    @Override
-    public int compare(SketchFile x, SketchFile y) {
-      if (x.isPrimary() && !y.isPrimary()) {
-        return -1;
-      }
-      if (y.isPrimary() && !x.isPrimary()) {
-        return 1;
-      }
-      return x.getFileName().compareTo(y.getFileName());
+  public static final Comparator<SketchFile> CODE_DOCS_COMPARATOR = (x, y) -> {
+    if (x.isPrimary() && !y.isPrimary()) {
+      return -1;
     }
+    if (y.isPrimary() && !x.isPrimary()) {
+      return 1;
+    }
+    return x.getFileName().compareTo(y.getFileName());
   };
 
   /**

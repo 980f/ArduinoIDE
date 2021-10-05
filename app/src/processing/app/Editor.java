@@ -44,9 +44,11 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -107,8 +109,8 @@ public class Editor extends JFrame implements RunnerListener {
   private JMenu recentSketchesMenu;
   private JMenu programmersMenu;
   private final Box upper;
-  private ArrayList<EditorTab> tabs = new ArrayList<>();
-  private ArrayList<EditorTab> mru = new ArrayList<>();//[980f] mru tabs for big projects
+  private final ArrayList<EditorTab> tabs = new ArrayList<>();
+  private final ArrayList<EditorTab> mru = new ArrayList<>();//[980f] mru tabs for big projects
   public ArrayList<Finding> findings = new ArrayList<>(); //interesting lines, public to minimize source changes, todo: relocate clear() invocation so that this can be private.
 
   private int currentTabIndex = -1;
@@ -191,7 +193,7 @@ public class Editor extends JFrame implements RunnerListener {
   EditorConsole console;
 
   public JTabbedPane dock;//[980f] change console into dock for organizing what are presently pop-unders.
-  private JSplitPane splitPane;
+  private final JSplitPane splitPane;
 
   // currently opened program
   SketchController sketchController;
@@ -202,7 +204,7 @@ public class Editor extends JFrame implements RunnerListener {
   //JEditorPane editorPane;
 
   /** Contains all EditorTabs, of which only one will be visible */
-  private JPanel codePanel;
+  private final JPanel codePanel;
 
   //Runner runtime;
 
@@ -226,7 +228,7 @@ public class Editor extends JFrame implements RunnerListener {
   private UploadHandler uploadUsingProgrammerHandler;
   private TimeoutUploadHandler timeoutUploadHandler;
 
-  private Map<String, Tool> internalToolCache = new HashMap<>();
+  private final Map<String, Tool> internalToolCache = new HashMap<>();
 
   public Editor(Base ibase, File file, int[] storedLocation, int[] defaultLocation, Platform platform) {
     super("Arduino");
@@ -262,7 +264,7 @@ public class Editor extends JFrame implements RunnerListener {
           for (Component menuItem : toolsMenu.getMenuComponents()) {
             if (menuItem instanceof JComponent) {
               Object removeOnWindowDeactivation = ((JComponent) menuItem).getClientProperty("removeOnWindowDeactivation");
-              if (removeOnWindowDeactivation != null && Boolean.valueOf(removeOnWindowDeactivation.toString())) {
+              if (removeOnWindowDeactivation != null && Boolean.parseBoolean(removeOnWindowDeactivation.toString())) {
                 toolsMenuItemsToRemove.add(menuItem);
               }
             }
@@ -372,7 +374,7 @@ public class Editor extends JFrame implements RunnerListener {
 
     // the following changed from 600, 400 for netbooks
     // http://code.google.com/p/arduino/issues/detail?id=52
-    splitPane.setMinimumSize(scale(new Dimension(600,100)));
+    splitPane.setMinimumSize(scale(new Dimension(600, 100)));
     box.add(splitPane);
 
     // hopefully these are no longer needed w/ swing
@@ -439,11 +441,13 @@ public class Editor extends JFrame implements RunnerListener {
           for (String piece : pieces) {
             if (piece.startsWith("#")) continue;
 
-            String path = null;
+            String path;
             if (piece.startsWith("file:///")) {
               path = piece.substring(7);
             } else if (piece.startsWith("file:/")) {
               path = piece.substring(5);
+            } else {
+              continue;//path can be null if elements does not start with a file uri
             }
             if (sketchController.addFile(new File(path))) {
               successful++;
@@ -865,6 +869,7 @@ public class Editor extends JFrame implements RunnerListener {
         File[] archives = toolDirectory.listFiles((dir, name) -> (name.toLowerCase().endsWith(".jar") ||
           name.toLowerCase().endsWith(".zip")));
 
+        assert archives != null;//only fires if installation file tree has been trashed.
         URL[] urlList = new URL[archives.length];
         for (int j = 0; j < urlList.length; j++) {
           urlList[j] = archives[j].toURI().toURL();
@@ -970,13 +975,14 @@ public class Editor extends JFrame implements RunnerListener {
     try {
       final Tool tool = getOrCreateToolInstance(className);
 
-      JMenuItem item = new JMenuItem(tool.getMenuTitle());
-
-      tool.init(Editor.this);
-
-      item.addActionListener(event -> SwingUtilities.invokeLater(tool));
-      return item;
-
+      JMenuItem item = null;
+      if (tool != null) {
+        item = new JMenuItem(tool.getMenuTitle());
+        tool.init(Editor.this);
+        item.addActionListener(event -> SwingUtilities.invokeLater(tool));
+        return item;
+      }
+      return null;
     } catch (Exception e) {
       e.printStackTrace();
       return null;
@@ -991,7 +997,7 @@ public class Editor extends JFrame implements RunnerListener {
         internalTool = (Tool) toolClass.newInstance();
       } catch (Exception e) {
         e.printStackTrace();
-        return null;
+        return null;//triggers NPE's in caller :(
       }
       internalToolCache.put(className, internalTool);
     }
@@ -1152,61 +1158,33 @@ public class Editor extends JFrame implements RunnerListener {
     menu.setMnemonic(KeyEvent.VK_H);
 
     JMenuItem item = new JMenuItem(tr("Getting Started"));
-    item.addActionListener(event -> Base.showArduinoGettingStarted());
+    item.addActionListener(event -> Base.openURL("https://www.arduino.cc/en/Guide"));
     menu.add(item);
 
     item = new JMenuItem(tr("Environment"));
-    item.addActionListener(event -> Base.showEnvironment());
+    item.addActionListener(event -> Base.openURL("https://www.arduino.cc/en/Guide/Environment"));
     menu.add(item);
 
     item = new JMenuItem(tr("Troubleshooting"));
-    item.addActionListener(event -> Base.showTroubleshooting());
+    item.addActionListener(event -> Base.openURL("https://support.arduino.cc/hc/en-us"));
     menu.add(item);
 
     item = new JMenuItem(tr("Reference"));
-    item.addActionListener(event -> Base.showReference());
-    menu.add(item);
-
-    menu.addSeparator();
-
-    item = new JMenuItem(tr("Galileo Help"));
-    item.setEnabled(false);
-    menu.add(item);
-
-    item = new JMenuItem(tr("Getting Started"));
-    item.addActionListener(event -> Base.showReference("reference/Galileo_help_files", "ArduinoIDE_guide_galileo"));
-    menu.add(item);
-
-    item = new JMenuItem(tr("Troubleshooting"));
-    item.addActionListener(event -> Base.showReference("reference/Galileo_help_files", "Guide_Troubleshooting_Galileo"));
-    menu.add(item);
-
-    menu.addSeparator();
-
-    item = new JMenuItem(tr("Edison Help"));
-    item.setEnabled(false);
-    menu.add(item);
-
-    item = new JMenuItem(tr("Getting Started"));
-    item.addActionListener(event -> Base.showReference("reference/Edison_help_files", "ArduinoIDE_guide_edison"));
-    menu.add(item);
-
-    item = new JMenuItem(tr("Troubleshooting"));
-    item.addActionListener(event -> Base.showReference("reference/Edison_help_files", "Guide_Troubleshooting_Edison"));
+    item.addActionListener(event -> Base.openURL("https://www.arduino.cc/reference/en/"));
     menu.add(item);
 
     menu.addSeparator();
 
     item = newJMenuItemShift(tr("Find in Reference"), 'F');
-    item.addActionListener(event -> handleFindReference());
+    item.addActionListener(event -> handleFindReference(getCurrentTab().getCurrentKeyword()));
     menu.add(item);
 
     item = new JMenuItem(tr("Frequently Asked Questions"));
-    item.addActionListener(event -> Base.showFAQ());
+    item.addActionListener(event -> Base.openURL("https://support.arduino.cc/hc/en-us"));
     menu.add(item);
 
     item = new JMenuItem(tr("Visit Arduino.cc"));
-    item.addActionListener(event -> Base.openURL(tr("http://www.arduino.cc/")));
+    item.addActionListener(event -> Base.openURL("https://www.arduino.cc/"));
     menu.add(item);
 
     // macosx already has its own about menu
@@ -1547,8 +1525,10 @@ public class Editor extends JFrame implements RunnerListener {
     // This must be run in the GUI thread
     SwingUtilities.invokeLater(() -> {
       codePanel.removeAll();
-      codePanel.add(tabs.get(index), BorderLayout.CENTER);
-      tabs.get(index).requestFocusInWindow(); // get the caret blinking
+      EditorTab selectedTab = tabs.get(index);
+      codePanel.add(selectedTab, BorderLayout.CENTER);
+      selectedTab.applyPreferences();
+      selectedTab.requestFocusInWindow(); // get the caret blinking
       // For some reason, these are needed. Revalidate says it should be
       // automatically called when components are added or removed, but without
       // it, the component switched to is not displayed. repaint() is needed to
@@ -1661,20 +1641,25 @@ public class Editor extends JFrame implements RunnerListener {
     tabs.remove(index);
   }
 
+
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 
-  void handleFindReference() {
-    String text = getCurrentTab().getCurrentKeyword();
 
+  void handleFindReference(String text) {
     String referenceFile = base.getPdeKeywords().getReference(text);
+    String q;
     if (referenceFile == null) {
-      statusNotice(I18n.format(tr("No reference available for \"{0}\""), text));
+      q = text;
+    } else if (referenceFile.startsWith("Serial_")) {
+      q = referenceFile.substring(7);
     } else {
-      if (referenceFile.startsWith("Serial_")) {
-        Base.showReference("Serial/" + referenceFile.substring("Serial_".length()));
-      } else {
-        Base.showReference("Reference/" + referenceFile);
-      }
+      q = referenceFile;
+    }
+    try {
+      Base.openURL("https://www.arduino.cc/search?tab=&q="
+                   + URLEncoder.encode(q, "UTF-8"));
+    } catch (UnsupportedEncodingException e) {
+      e.printStackTrace();
     }
   }
 
@@ -2108,6 +2093,14 @@ public class Editor extends JFrame implements RunnerListener {
   }
 
   /**
+   * Called by Sketch &rarr; Export.
+   * Handles calling the export() function on sketch, and
+   * queues all the gui status stuff that comes along with it.
+   * <p/>
+   * Made synchronized to (hopefully) avoid problems of people
+   * hitting export twice, quickly, and horking things up.
+   */
+  /**
    * Handles calling the export() function on sketch, and
    * queues all the gui status stuff that comes along with it.
    *
@@ -2196,6 +2189,11 @@ public class Editor extends JFrame implements RunnerListener {
   private void resumeOrCloseSerialMonitor() {
     // Return the serial monitor window to its initial state
     if (serialMonitor != null) {
+      try {
+        Thread.sleep(200);
+      } catch (InterruptedException e) {
+          // noop
+      }
       BoardPort boardPort = BaseNoGui.getDiscoveryManager().find(PreferencesData.get("serial.port"));
       long sleptFor = 0;
       while (boardPort == null && sleptFor < MAX_TIME_AWAITING_FOR_RESUMING_SERIAL_MONITOR) {
@@ -2477,9 +2475,11 @@ public class Editor extends JFrame implements RunnerListener {
       } catch (SerialNotFoundException e) {
         SwingUtilities.invokeLater(() -> statusError(tr("Error while burning bootloader: please select a serial port.")));
       } catch (PreferencesMapException e) {
-        SwingUtilities.invokeLater(() -> statusError(I18n.format(
-          tr("Error while burning bootloader: missing '{0}' configuration parameter"),
-          e.getMessage())));
+        SwingUtilities.invokeLater(() -> {
+          statusError(I18n.format(
+            tr("Error while burning bootloader: missing '{0}' configuration parameter"),
+            e.getMessage()));
+        });
       } catch (RunnerException e) {
         SwingUtilities.invokeLater(() -> statusError(e.getMessage()));
       } catch (Exception e) {
@@ -2695,20 +2695,7 @@ public class Editor extends JFrame implements RunnerListener {
   // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 
   protected void onBoardOrPortChange() {
-    TargetBoard board = BaseNoGui.getTargetBoard();
-    if (board != null) {
-      if(sketch.prefs!=null){
-        //todo: only if active editor, until then we need to start a different instance of the whole IDE if we want simultaneous development.
-        //IE the present multi-sketch architecture presumes you are swapping programs for one board.
-        sketch.prefs.setBoard(board);
-      } else {
-        lineStatus.setBoardName(board.getName());
-      }
-
-    } else {
-      lineStatus.setBoardName("-");
-    }
-    lineStatus.setPort(PreferencesData.get("serial.port"));
+    lineStatus.updateBoardAndPort();
     lineStatus.repaint();
   }
 

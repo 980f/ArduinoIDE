@@ -141,8 +141,7 @@ public class Compiler implements MessageConsumer {
     }
   }
 
-  private static final Pattern ERROR_FORMAT = Pattern.compile("(.+\\.\\w+):(\\d+)(:\\d+)*:\\s*(fatal)?\\s*error:\\s*(.*)\\s*", Pattern.MULTILINE | Pattern.DOTALL);
-  private static final Pattern WARNING_FORMAT = Pattern.compile("(.+\\.\\w+):(\\d+)(:\\d+)*:\\s*warning:\\s*(.*)\\s*", Pattern.MULTILINE | Pattern.DOTALL);
+  private static final Pattern ERROR_FORMAT = Pattern.compile("(.+\\.\\w+):(\\d+)(:\\d+)*:\\s*((fatal)?\\s*error:\\s*)(.*)\\s*", Pattern.MULTILINE | Pattern.DOTALL);
 
   private final File pathToSketch;
   private final Sketch sketch;
@@ -525,22 +524,16 @@ public class Compiler implements MessageConsumer {
 
     String[] pieces = PApplet.match(s, ERROR_FORMAT);
 
-    if(pieces == null && PreferencesData.getBoolean("compiler.show.warnings",false)){//[980f]
-      pieces = PApplet.match(s, WARNING_FORMAT);
-    }
-
     if (pieces != null) {
       String msg = "";
-      int errorIdx = pieces.length - 1;
-      String error = pieces[errorIdx];
       String filename = pieces[1];
       int line = PApplet.parseInt(pieces[2]);
-      int col;
-      if (errorIdx > 3) {
+      int col = -1;
+      if (pieces[3] != null) {
         col = PApplet.parseInt(pieces[3].substring(1));
-      } else {
-        col = -1;
       }
+      String errorPrefix = pieces[4];
+      String error = pieces[6];
 
       switch (error.trim()) {
       case "SPI.h: No such file or directory":
@@ -594,11 +587,8 @@ public class Compiler implements MessageConsumer {
         String fileName = ex.getCodeFile().getPrettyName();
         int lineNum = ex.getCodeLine() + 1;
         int colNum = ex.getCodeColumn();
-        if (colNum != -1) {
-          s = fileName + ":" + lineNum + ":" + colNum + ": error: " + error + msg;
-        } else {
-          s = fileName + ":" + lineNum + ": error: " + error + msg;
-        }
+        String column = (colNum != -1) ? (":" + colNum) : "";
+        s = fileName + ":" + lineNum + column + ": " + errorPrefix + error + msg;
       }
 
       if (ex != null) {

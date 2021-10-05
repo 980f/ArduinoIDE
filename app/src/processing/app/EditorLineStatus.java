@@ -92,12 +92,7 @@ public class EditorLineStatus extends JComponent {
   public void paintComponent(Graphics graphics) {
     Graphics2D g = Theme.setupGraphics2D(graphics);
     if (name.isEmpty() && port.isEmpty()) {
-      PreferencesMap boardPreferences = BaseNoGui.getBoardPreferences();
-      if (boardPreferences != null)
-        setBoardName(boardPreferences.get("name"));
-      else
-        setBoardName("-");
-      setPort(PreferencesData.get("serial.port"));
+      updateBoardAndPort();
     }
     g.setColor(background);
     Dimension size = getSize();
@@ -145,5 +140,30 @@ public class EditorLineStatus extends JComponent {
 
   public Dimension getMaximumSize() {
     return scale(new Dimension(3000, height));
+  }
+
+  public void updateBoardAndPort() {
+    PreferencesMap boardPreferences = BaseNoGui.getBoardPreferences();
+    if (boardPreferences != null) {
+      //todo: restore 980F per sketch board preference
+//    TargetBoard board = BaseNoGui.getTargetBoard();
+//    if (board != null) {
+//      if(sketch.prefs!=null){
+//        //todo: only if active editor, until then we need to start a different instance of the whole IDE if we want simultaneous development.
+//        //IE the present multi-sketch architecture presumes you are swapping programs for one board.
+//        sketch.prefs.setBoard(board);
+//      } else {
+//        setBoardName(board.getName());
+//      }
+// end 980F
+
+      setBoardName(boardPreferences.get("name"));
+    } else {
+      setBoardName("-");
+    }
+    setPort(PreferencesData.get("serial.port"));
+
+
+
   }
 }

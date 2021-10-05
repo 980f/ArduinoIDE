@@ -29,6 +29,7 @@ import static processing.app.Theme.scale;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.io.IOException;
@@ -235,6 +236,15 @@ public class EditorTab extends JPanel implements SketchFile.TextStorage {
       throw new NullPointerException("Tool cc.arduino.packages.formatter.AStyle unavailable");
     }
     item.setName("menuToolsAutoFormat");
+
+    menu.add(item);
+    
+    item = new JMenuItem(tr("Comment/Uncomment"), '/');
+    item.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          handleCommentUncomment();
+        }
+    });
     menu.add(item);
 
     addItemToMenu(menu,"Edit Include", '#', e -> editInclude());
@@ -244,7 +254,7 @@ public class EditorTab extends JPanel implements SketchFile.TextStorage {
     addItemToMenu(menu, "Decrease Indent", '[', e -> handleIndentOutdent(false));
     addItemToMenu(menu, "Copy for Forum", '\0', e -> handleDiscourseCopy());
     addItemToMenu(menu, "Copy as HTML", '\0', e -> handleHTMLCopy());
-    final JMenuItem referenceItem = addItemToMenu(menu, "Find in Reference", '\0', e -> editor.handleFindReference());
+    final JMenuItem referenceItem = addItemToMenu(menu, "Find in Reference", '\0', e -> editor.handleFindReference(getCurrentKeyword()));//980f goofed merge near here
     final JMenuItem openURLItem = addItemToMenu(menu, "Open URL", '\0', e -> Base.openURL(e.getActionCommand()));
     
     menu.addPopupMenuListener(new PopupMenuListener() {
@@ -431,6 +441,9 @@ public class EditorTab extends JPanel implements SketchFile.TextStorage {
     } finally {
       caret.setUpdatePolicy(policy);
     }
+    // A trick to force textarea to recalculate the bracket matching rectangle.
+    // In the worst case scenario, this should be ineffective.
+    textarea.setLineWrap(textarea.getLineWrap());
   }
 
   /**

@@ -32,7 +32,9 @@ package cc.arduino.contributions.libraries.ui;
 import cc.arduino.contributions.libraries.ContributedLibrary;
 import cc.arduino.contributions.libraries.ContributedLibraryReleases;
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 public class ContributedLibraryReleasesComparator implements Comparator<ContributedLibraryReleases> {
 
@@ -47,16 +49,18 @@ public class ContributedLibraryReleasesComparator implements Comparator<Contribu
     ContributedLibrary lib1 = o1.getLatest();
     ContributedLibrary lib2 = o2.getLatest();
 
-    if (lib1.getTypes() == null || lib2.getTypes() == null) {
+    List<String> types1 = lib1.getTypes();
+    List<String> types2 = lib2.getTypes();
+    if (types1 == null) types1 = Arrays.asList();
+    if (types2 == null) types2 = Arrays.asList();
+
+    if (types1.contains(firstType) && types2.contains(firstType)) {
       return compareName(lib1, lib2);
     }
-    if (lib1.getTypes().contains(firstType) && lib2.getTypes().contains(firstType)) {
-      return compareName(lib1, lib2);
-    }
-    if (lib1.getTypes().contains(firstType)) {
+    if (types1.contains(firstType)) {
       return -1;
     }
-    if (lib2.getTypes().contains(firstType)) {
+    if (types2.contains(firstType)) {
       return 1;
     }
     return compareName(lib1, lib2);

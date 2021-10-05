@@ -34,12 +34,18 @@ public class ContributedLibraryTableCellJPanel extends JPanel {
   final JPanel inactiveButtonsPanel;
   final JLabel statusLabel;
   final JTextPane description;
+  final TitledBorder titledBorder;
   private final String moreInfoLbl = tr("More info");
 
   public ContributedLibraryTableCellJPanel(JTable parentTable, Object value,
                                            boolean isSelected) {
     super();
     setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+    // Actual title set below
+    titledBorder = BorderFactory.createTitledBorder("");
+    titledBorder.setTitleFont(getFont().deriveFont(Font.BOLD));
+    setBorder(titledBorder);
 
     moreInfoButton = new JButton(moreInfoLbl);
     moreInfoButton.setVisible(false);
@@ -120,9 +126,7 @@ public class ContributedLibraryTableCellJPanel extends JPanel {
       return;
 
     ContributedLibrary selected = releases.getSelected();
-    TitledBorder titledBorder = BorderFactory.createTitledBorder(selected.getName());
-    titledBorder.setTitleFont(getFont().deriveFont(Font.BOLD));
-    setBorder(titledBorder);
+    titledBorder.setTitle(selected.getName());
     Optional<ContributedLibrary> mayInstalled = releases.getInstalled();
 
     boolean installable, upgradable;
@@ -144,8 +148,8 @@ public class ContributedLibraryTableCellJPanel extends JPanel {
     installButtonPlaceholder.setVisible(!(installable || upgradable));
 
     String name = selected.getName();
-    String author = selected.getAuthor();
-    // String maintainer = selectedLib.getMaintainer();
+    // String author = selected.getAuthor();
+    String maintainer = selected.getMaintainer();
     final String website = selected.getWebsite();
     String sentence = selected.getSentence();
     String paragraph = selected.getParagraph();
@@ -164,8 +168,8 @@ public class ContributedLibraryTableCellJPanel extends JPanel {
 
     // ...author...
     desc += format("<font color=\"{0}\">", midcolor);
-    if (author != null && !author.isEmpty()) {
-      desc += format(" by <b>{0}</b>", author);
+    if (maintainer != null && !maintainer.isEmpty()) {
+      desc += format(" by <b>{0}</b>", maintainer);
     }
 
     // ...version.
@@ -192,7 +196,7 @@ public class ContributedLibraryTableCellJPanel extends JPanel {
         desc += format("{0}", paragraph);
       desc += "<br />";
     }
-    if (author != null && !author.isEmpty()) {
+    if (maintainer != null && !maintainer.isEmpty()) {
       desc = setButtonOrLink(moreInfoButton, desc, moreInfoLbl, website);
     }
 
@@ -271,5 +275,7 @@ public class ContributedLibraryTableCellJPanel extends JPanel {
     // The description is not opaque, so copy our foreground color to it.
     if (description != null)
       description.setForeground(c);
+    if (titledBorder != null)
+      titledBorder.setTitleColor(c);
   }
 }
