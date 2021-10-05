@@ -99,7 +99,7 @@ import processing.app.tools.Tool;
 /**
  * Main editor panel for the Processing Development Environment.
  */
-@SuppressWarnings("serial")
+//Redundatn suppression @SuppressWarnings("serial")
 public class Editor extends JFrame implements RunnerListener {
 
   public static final int MAX_TIME_AWAITING_FOR_RESUMING_SERIAL_MONITOR = 10000;
@@ -737,9 +737,8 @@ public class Editor extends JFrame implements RunnerListener {
       Base base = Base.forhacking;
       Editor activeEditor = base.getActiveEditor();
       try {
+        activeEditor.handleSave(true);//blocking save until we confirm this is the source of losses experienced on the rpi.
         if (activeEditor.getSketch().reload()) {
-          //todo: the below seems to lose edits in progress, that should be handled in the creatTabs
-          activeEditor.handleSave(true);//blocking save until we confirm this is the source of losses experienced on the rpi.
           activeEditor.createTabs();
         }
       } catch (IOException e) {
@@ -747,7 +746,6 @@ public class Editor extends JFrame implements RunnerListener {
       }
     });
     sketchMenu.add(item);
-
   }
 
 
@@ -975,8 +973,8 @@ public class Editor extends JFrame implements RunnerListener {
     try {
       final Tool tool = getOrCreateToolInstance(className);
 
-      JMenuItem item = null;
       if (tool != null) {
+        JMenuItem item;
         item = new JMenuItem(tool.getMenuTitle());
         tool.init(Editor.this);
         item.addActionListener(event -> SwingUtilities.invokeLater(tool));
