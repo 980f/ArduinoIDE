@@ -37,17 +37,16 @@ import java.awt.geom.Rectangle2D;
 
 import static processing.app.I18n.tr;
 
-public class SerialPlotter extends AbstractMonitor {
+public class SerialPlotter extends SerialMonitorBase {
 
   private final StringBuffer messageBuffer;
   private JComboBox<String> serialRates;
-  private Serial serial;
-  private int serialRate, xCount;
+  private int xCount;
 
   private JLabel noLineEndingAlert;
-  private JTextField textField;
-  private JButton sendButton;
-  private JComboBox<String> lineEndings;
+//see if base class one is fine  private JTextField textField;
+//see if base class one is fine  private JButton sendButton;
+//see if base class one is fine  private JComboBox<String> lineEndings;
 
   private ArrayList<Graph> graphs;
   private final static int BUFFER_CAPACITY = 500;
@@ -235,24 +234,6 @@ public class SerialPlotter extends AbstractMonitor {
   public SerialPlotter(BoardPort port) {
     super(port);
 
-    serialRate = PreferencesData.getInteger("serial.debug_rate");
-    serialRates.setSelectedItem(serialRate + " " + tr("baud"));
-    onSerialRateChange(event -> {
-      String wholeString = (String) serialRates.getSelectedItem();
-      String rateString = wholeString.substring(0, wholeString.indexOf(' '));
-      serialRate = Integer.parseInt(rateString);
-      PreferencesData.set("serial.debug_rate", rateString);
-      if (serial != null) {
-        try {
-          close();
-          Thread.sleep(100); // Wait for serial port to properly close
-          open();
-        } catch (Exception e) {
-          // ignore
-        }
-      }
-    });
-
     messageBuffer = new StringBuffer();
     graphs = new ArrayList<>();
   }
@@ -344,30 +325,6 @@ public class SerialPlotter extends AbstractMonitor {
  
   }
 
-  private void send(String string) {
-    String s = string;
-    if (serial != null) {
-      switch (lineEndings.getSelectedIndex()) {
-        case 1:
-          s += "\n";
-          break;
-        case 2:
-          s += "\r";
-          break;
-        case 3:
-          s += "\r\n";
-          break;
-        default:
-          break;
-      }
-      if ("".equals(s) && lineEndings.getSelectedIndex() == 0 && !PreferencesData.has("runtime.line.ending.alert.notified")) {
-        noLineEndingAlert.setForeground(Color.RED);
-        PreferencesData.set("runtime.line.ending.alert.notified", "true");
-      }
-      serial.write(s);
-    }
-  }
-
   public void onSendCommand(ActionListener listener) {
     textField.addActionListener(listener);
     sendButton.addActionListener(listener);
@@ -383,10 +340,6 @@ public class SerialPlotter extends AbstractMonitor {
   protected void onEnableWindow(boolean enable) {
     textField.setEnabled(enable);
     sendButton.setEnabled(enable);
-  }
-
-  private void onSerialRateChange(ActionListener listener) {
-    serialRates.addActionListener(listener);
   }
 
   public void message(final String s) {
@@ -471,27 +424,4 @@ public class SerialPlotter extends AbstractMonitor {
     SwingUtilities.invokeLater(SerialPlotter.this::repaint);
   }
 
-  public void open() throws Exception {
-    super.open();
-
-    if (serial != null) return;
-
-    serial = new Serial(getBoardPort().getAddress(), serialRate) {
-      @Override
-      protected void message(char buff[], int n) {
-        addToUpdateBuffer(buff, n);
-      }
-    };
-  }
-
-  public void close() throws Exception {
-    if (serial != null) {
-      super.close();
-      int[] location = getPlacement();
-      String locationStr = PApplet.join(PApplet.str(location), ",");
-      PreferencesData.set("last.serial.location", locationStr);
-      serial.dispose();
-      serial = null;
-    }
-  }
 }

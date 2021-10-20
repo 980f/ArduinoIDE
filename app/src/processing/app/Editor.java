@@ -83,7 +83,6 @@ import cc.arduino.view.StubMenuListener;
 import cc.arduino.view.findreplace.FindReplace;
 import jssc.SerialPortException;
 import processing.app.debug.RunnerException;
-import processing.app.debug.TargetBoard;
 import processing.app.forms.PasswordAuthorizationDialog;
 import processing.app.helpers.DocumentTextChangeListener;
 import processing.app.helpers.Keys;
@@ -185,14 +184,17 @@ public class Editor extends JFrame implements RunnerListener {
 
   private static JMenu portMenu;
 
-  static volatile AbstractMonitor serialMonitor;
-  static AbstractMonitor serialPlotter;
+  /** since use is exclusive we replace the two objects with one and a mode based on concrete type
+   * Note: there are three classes, the network monitor was exclusive to text, no reason for that other than poor factoring of code  */
+  static volatile AbstractTextMonitor serialMonitor;
 
   final EditorHeader header;
   EditorStatus status;
   EditorConsole console;
 
   public JTabbedPane dock;//[980f] change console into dock for organizing what are presently pop-unders.
+  public JPanel serPanel;//[980f] added panel to optionally embed serial monitor in new console dock.
+
   private final JSplitPane splitPane;
 
   // currently opened program
@@ -328,8 +330,8 @@ public class Editor extends JFrame implements RunnerListener {
       dock.addTab(tr("Finder"), new GlobalFindall.FindAllGui(new GlobalFindall(this)));
       errorView = new FindList(this);
       dock.addTab(tr("Errors"), errorView);
-
-      //todo: add serial monitor likewise.
+      serPanel=new JPanel(new BorderLayout());//todo: what layout is best?
+      dock.addTab(tr("Sermon"), serPanel);//todo: need to make serPanel and serialMonitor jframe mutually exclusive.
       dockslot=dock;
     } else {
       dockslot = consolePanel;
@@ -1045,16 +1047,17 @@ public class Editor extends JFrame implements RunnerListener {
 
     BaseNoGui.selectSerialPort(name);
     try {
-      boolean reopenMonitor = ((serialMonitor != null && serialMonitor.isVisible()) ||
-                                serialPlotter != null && serialPlotter.isVisible());
+      boolean reopenMonitor = ((serialMonitor != null && serialMonitor.isVisible())
+//        || serialPlotter != null && serialPlotter.isVisible())
+      );
       if (serialMonitor != null) {
         serialMonitor.close();
       }
-      if (serialPlotter != null) {
-        serialPlotter.close();
-      }
+//      if (serialPlotter != null) {
+//        serialPlotter.close();
+//      }
       if (reopenMonitor) {
-        handleSerial();
+        handleSerial();//bug: opened text mode even if plotter had been active.
       }
     } catch (Exception e) {
       // ignore
@@ -2136,9 +2139,9 @@ public class Editor extends JFrame implements RunnerListener {
         if (serialMonitor != null) {
           serialMonitor.suspend();
         }
-        if (serialPlotter != null) {
-          serialPlotter.suspend();
-        }
+//        if (serialPlotter != null) {
+//          serialPlotter.suspend();
+//        }
 
         boolean success = sketchController.exportApplet(usingProgrammer);
         if (success) {
@@ -2175,7 +2178,7 @@ public class Editor extends JFrame implements RunnerListener {
       toolbar.deactivateExport();
 
       resumeOrCloseSerialMonitor();
-      resumeOrCloseSerialPlotter();
+//      resumeOrCloseSerialPlotter();
       base.onBoardOrPortChange();
     }
   }
@@ -2187,10 +2190,13 @@ public class Editor extends JFrame implements RunnerListener {
   private void resumeOrCloseSerialMonitor() {
     // Return the serial monitor window to its initial state
     if (serialMonitor != null) {
-      try {
-        Thread.sleep(200);
-      } catch (InterruptedException e) {
+      boolean betextual=!(serialMonitor instanceof SerialPlotter);
+      if(betextual) {//todo: confirm that plotter doesn't benefit from this.
+        try {
+          Thread.sleep(200);
+        } catch (InterruptedException e) {
           // noop
+        }
       }
       BoardPort boardPort = BaseNoGui.getDiscoveryManager().find(PreferencesData.get("serial.port"));
       long sleptFor = 0;
@@ -2208,7 +2214,7 @@ public class Editor extends JFrame implements RunnerListener {
           serialMonitor.resume(boardPort);
           if (boardPort == null) {
             serialMonitor.close();
-            handleSerial();
+            handleSerialDisplay(betextual);
           } else {
             serialMonitor.resume(boardPort);
           }
@@ -2219,24 +2225,24 @@ public class Editor extends JFrame implements RunnerListener {
    }
   }
 
-  private void resumeOrCloseSerialPlotter() {
-    // Return the serial plotter window to its initial state
-    if (serialPlotter != null) {
-      BoardPort boardPort = BaseNoGui.getDiscoveryManager().find(PreferencesData.get("serial.port"));
-      try {
-        if (serialPlotter != null)
-          serialPlotter.resume(boardPort);
-        if (boardPort == null) {
-          serialPlotter.close();
-          handlePlotter();
-        } else {
-          serialPlotter.resume(boardPort);
-        }
-      } catch (Exception e) {
-        statusError(e);
-      }
-   }
-  }
+//  private void resumeOrCloseSerialPlotter() {
+//    // Return the serial plotter window to its initial state
+//    if (serialPlotter != null) {
+//      BoardPort boardPort = BaseNoGui.getDiscoveryManager().find(PreferencesData.get("serial.port"));
+//      try {
+//        if (serialPlotter != null)
+//          serialPlotter.resume(boardPort);
+//        if (boardPort == null) {
+//          serialPlotter.close();
+//          handlePlotter();
+//        } else {
+//          serialPlotter.resume(boardPort);
+//        }
+//      } catch (Exception e) {
+//        statusError(e);
+//      }
+//   }
+//  }
 
   class TimeoutUploadHandler implements Runnable {
 
@@ -2252,60 +2258,80 @@ public class Editor extends JFrame implements RunnerListener {
       }
     }
   }
-
-  public void handleSerial() {
-    if(serialPlotter != null) {
-      if(serialPlotter.isClosed()) {
-        serialPlotter = null;
-      } else {
-        statusError(tr("Serial monitor not available while plotter is open"));
-        return;
+  /** @returns whether a popup should actually pop-up */
+  public boolean onSerialMonitorChange(AbstractTextMonitor serialDisplay){
+    if(PreferencesData.getBoolean("editor.dock", false)) {
+      serPanel.remove(0);
+      if(serialDisplay!=null && !(serialDisplay instanceof SerialPlotter)) {//not yet ready to test plotter in window
+        serPanel.add(serialDisplay);
       }
+      return false;
     }
+    return true;
+  }
 
+  /** factored from handleSerial and handlePlotter. The plotter stuff seems to have bugs related to network source, small but sometimes significant differences from text view of serial data.
+   * The serial port vs network stuff needs to be factored out of the textview/plot divide.
+   *
+   * @returns nothing useful at the present */
+  public boolean handleSerialDisplay(boolean betextual){
     if (serialMonitor != null) {
+      boolean istextual=!(serialMonitor instanceof SerialPlotter);
       // The serial monitor already exists
-
       if (serialMonitor.isClosed()) {
-        serialMonitor.dispose();
+        if(istextual) {
+          serialMonitor.dispose();//todo: perhaps plotter should have been disposed?
+        }
         // If it's closed, clear the refrence to the existing
         // monitor and create a new one
         serialMonitor = null;
+        onSerialMonitorChange(serialMonitor);
       }
       else {
         // If it's not closed, give it the focus
-        try {
-          serialMonitor.toFront();
-          serialMonitor.requestFocus();
-          return;
-        } catch (Exception e) {
-          // noop
+        if(istextual == betextual) { //if is desired type bring it forward
+          try {
+//todo: 980f: replace onSerialMonitorChange with docking logic here.
+            serialMonitor.toFront();
+            serialMonitor.requestFocus();
+          } catch (Exception e) {
+            // noop
+          }
+        } else {
+          statusError(tr(betextual?"Serial monitor not available while plotter is open":"Plotter not available while serial monitor is open"));
         }
+        return false;//no action required
       }
     }
-
+    //none active so ...
     BoardPort port = Base.getDiscoveryManager().find(PreferencesData.get("serial.port"));
 
     if (port == null) {
       statusError(I18n.format(tr("Board at {0} is not available"), PreferencesData.get("serial.port")));
-      return;
+      return false;
     }
 
-    serialMonitor = new MonitorFactory().newMonitor(port);
+    if(betextual){
+      serialMonitor = new MonitorFactory().newMonitor(port);
 
-    if (serialMonitor == null) {
-      String board = port.getPrefs().get("board");
-      String boardName = BaseNoGui.getPlatform().resolveDeviceByBoardID(BaseNoGui.packages, board);
-      statusError(I18n.format(tr("Serial monitor is not supported on network ports such as {0} for the {1} in this release"), PreferencesData.get("serial.port"), boardName));
-      return;
+      if (serialMonitor == null) {
+        String board = port.getPrefs().get("board");
+        String boardName = BaseNoGui.getPlatform().resolveDeviceByBoardID(BaseNoGui.packages, board);
+        statusError(I18n.format(tr("Serial monitor is not supported on network ports such as {0} for the {1} in this release"), PreferencesData.get("serial.port"), boardName));
+        return false;
+      }
+      base.addEditorFontResizeListeners(serialMonitor);//todo: perhaps plotter needs this too?
+    } else {
+      //apparently plotter only serves true serial ports
+      serialMonitor = new SerialPlotter(port);
     }
+    onSerialMonitorChange(serialMonitor);
 
-    base.addEditorFontResizeListeners(serialMonitor);
     Base.setIcon(serialMonitor);
 
     // If currently uploading, disable the monitor (it will be later
     // enabled when done uploading)
-    if (uploading || avoidMultipleOperations) {
+    if (uploading || betextual&&avoidMultipleOperations) {//todo: is avoidMultiple tied to network activity?
       try {
         serialMonitor.suspend();
       } catch (Exception e) {
@@ -2321,15 +2347,15 @@ public class Editor extends JFrame implements RunnerListener {
         dialog.setVisible(true);
 
         if (dialog.isCancelled()) {
-          statusNotice(tr("Unable to open serial monitor"));
-          return;
+          statusNotice(tr(betextual?"Unable to open serial monitor":"Unable to open serial plotter"));//keep as two complete strings so as to not affect existing translation resources
+          return false;
         }
 
         PreferencesData.set(serialMonitor.getAuthorizationKey(), dialog.getPassword());
       }
 
       try {
-        if (!avoidMultipleOperations) {
+        if (!betextual || !avoidMultipleOperations){
           serialMonitor.open();
         }
         serialMonitor.setVisible(true);
@@ -2344,13 +2370,16 @@ public class Editor extends JFrame implements RunnerListener {
         if (e.getCause() != null && e.getCause() instanceof SerialPortException) {
           errorMessage += " (" + ((SerialPortException) e.getCause()).getExceptionType() + ")";
         }
-        serialMonitor = null;
         statusError(errorMessage);
-        try {
-          serialMonitor.close();
-        } catch (Exception e1) {
-          // noop
+        if(betextual) {
+          try {
+            serialMonitor.close();//hehe: formerly this followed unconditional nulling of the reference!
+          } catch (Exception e1) {
+            // noop
+          }
         }
+        serialMonitor = null;
+        onSerialMonitorChange(serialMonitor);
       } catch (Exception e) {
         statusError(e);
       } finally {
@@ -2360,101 +2389,16 @@ public class Editor extends JFrame implements RunnerListener {
       }
 
     } while (serialMonitor != null && serialMonitor.requiresAuthorization() && !success);
+    return true;
+  }
 
+  //[980f]: each of the following had minor differences, some of which might have been bugs. The above method preserves most of those possible bugs.
+  public void handleSerial() {
+    handleSerialDisplay(true);
   }
 
   public void handlePlotter() {
-    if(serialMonitor != null) {
-      if(serialMonitor.isClosed()) {
-        serialMonitor = null;
-      } else {
-        statusError(tr("Plotter not available while serial monitor is open"));
-        return;
-      }
-    }
-
-    if (serialPlotter != null) {
-      // The serial plotter already exists
-
-      if (serialPlotter.isClosed()) {
-        // If it's closed, clear the refrence to the existing
-        // plotter and create a new one
-        serialPlotter.dispose();
-        serialPlotter = null;
-      }
-      else {
-        // If it's not closed, give it the focus
-        try {
-          serialPlotter.toFront();
-          serialPlotter.requestFocus();
-          return;
-        } catch (Exception e) {
-          // noop
-        }
-      }
-    }
-
-    BoardPort port = Base.getDiscoveryManager().find(PreferencesData.get("serial.port"));
-
-    if (port == null) {
-      statusError(I18n.format(tr("Board at {0} is not available"), PreferencesData.get("serial.port")));
-      return;
-    }
-
-    serialPlotter = new SerialPlotter(port);
-    Base.setIcon(serialPlotter);
-
-    // If currently uploading, disable the plotter (it will be later
-    // enabled when done uploading)
-    if (uploading) {
-      try {
-        serialPlotter.suspend();
-      } catch (Exception e) {
-        statusError(e);
-      }
-    }
-
-    boolean success = false;
-    do {
-      if (serialPlotter.requiresAuthorization() && !PreferencesData.has(serialPlotter.getAuthorizationKey())) {
-        PasswordAuthorizationDialog dialog = new PasswordAuthorizationDialog(this, tr("Type board password to access its console"));
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
-
-        if (dialog.isCancelled()) {
-          statusNotice(tr("Unable to open serial plotter"));
-          return;
-        }
-
-        PreferencesData.set(serialPlotter.getAuthorizationKey(), dialog.getPassword());
-      }
-
-      try {
-        serialPlotter.open();
-        serialPlotter.setVisible(true);
-        success = true;
-        statusEmpty();
-      } catch (ConnectException e) {
-        statusError(tr("Unable to connect: is the sketch using the bridge?"));
-      } catch (JSchException e) {
-        statusError(tr("Unable to connect: wrong password?"));
-      } catch (SerialException e) {
-        String errorMessage = e.getMessage();
-        if (e.getCause() != null && e.getCause() instanceof SerialPortException) {
-          errorMessage += " (" + ((SerialPortException) e.getCause()).getExceptionType() + ")";
-        }
-        statusError(errorMessage);
-        serialPlotter = null;
-      } catch (Exception e) {
-        statusError(e);
-      } finally {
-        if (serialPlotter != null && serialPlotter.requiresAuthorization() && !success) {
-          PreferencesData.remove(serialPlotter.getAuthorizationKey());
-        }
-      }
-
-    } while (serialPlotter != null && serialPlotter.requiresAuthorization() && !success);
-
+    handleSerialDisplay(false);
   }
 
   private void handleBurnBootloader() {
