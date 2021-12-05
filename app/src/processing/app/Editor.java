@@ -326,8 +326,8 @@ public class Editor extends JFrame implements RunnerListener {
     if(PreferencesData.getBoolean("editor.dock", false)) {//[980F]: get rid of popunders by docking them
       //980F dock serial monitor et al. in new frame around console.
       dock = new JTabbedPane();
-      dock.addTab(tr("Console"), consolePanel);
       dock.addTab(tr("Finder"), new GlobalFindall.FindAllGui(new GlobalFindall(this)));
+      dock.addTab(tr("Console"), consolePanel);
       errorView = new FindList(this);
       dock.addTab(tr("Errors"), errorView);
       serPanel=new JPanel(new BorderLayout());//todo: what layout is best?
@@ -2261,9 +2261,13 @@ public class Editor extends JFrame implements RunnerListener {
   /** @returns whether a popup should actually pop-up */
   public boolean onSerialMonitorChange(AbstractTextMonitor serialDisplay){
     if(PreferencesData.getBoolean("editor.dock", false)) {
-      serPanel.remove(0);
+      Component rootpanel =  serialDisplay.popout.getComponent(0);
+        if(rootpanel instanceof JRootPane){
+          serialDisplay.popout.remove(rootpanel);
+        }
+
       if(serialDisplay!=null && !(serialDisplay instanceof SerialPlotter)) {//not yet ready to test plotter in window
-        serPanel.add(serialDisplay);
+        serPanel.add(rootpanel);
       }
       return false;
     }
@@ -2292,7 +2296,7 @@ public class Editor extends JFrame implements RunnerListener {
         if(istextual == betextual) { //if is desired type bring it forward
           try {
 //todo: 980f: replace onSerialMonitorChange with docking logic here.
-            serialMonitor.toFront();
+            serialMonitor.popout.toFront();
             serialMonitor.requestFocus();
           } catch (Exception e) {
             // noop
@@ -2327,11 +2331,11 @@ public class Editor extends JFrame implements RunnerListener {
     }
     onSerialMonitorChange(serialMonitor);
 
-    Base.setIcon(serialMonitor);
+    Base.setIcon(serialMonitor.popout);
 
     // If currently uploading, disable the monitor (it will be later
     // enabled when done uploading)
-    if (uploading || betextual&&avoidMultipleOperations) {//todo: is avoidMultiple tied to network activity?
+    if (uploading || betextual && avoidMultipleOperations) {//todo: is avoidMultiple tied to network activity?
       try {
         serialMonitor.suspend();
       } catch (Exception e) {

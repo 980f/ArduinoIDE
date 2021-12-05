@@ -52,6 +52,16 @@ public class SerialMonitorBase extends AbstractTextMonitor {
         }
       }
     });
+
+    onSendCommand((ActionEvent event) -> {
+      String command = textField.getText();
+      if(!unbuffered) {//[980f] don't resend, but do pass into history mechanism.
+        send(command);
+      }
+      commandHistory.addCommand(command);
+      textField.setText("");
+    });
+
   }
 
   protected void send(String s) {
@@ -79,8 +89,8 @@ public class SerialMonitorBase extends AbstractTextMonitor {
 
   @Override
   public void open() throws Exception {
-    this.open();
-
+    //980f:diff:this.open();
+    super.open();
     if (serial != null) return;
 
     serial = new Serial(getBoardPort().getAddress(), serialRate) {

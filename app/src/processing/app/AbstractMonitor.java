@@ -11,8 +11,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 @SuppressWarnings("serial")
-public abstract class AbstractMonitor extends JFrame implements ActionListener {
+public abstract class AbstractMonitor extends JPanel implements ActionListener {
 
+  JFrame popout;
   private boolean closed;
 
   private StringBuffer updateBuffer;
@@ -24,10 +25,12 @@ public abstract class AbstractMonitor extends JFrame implements ActionListener {
   protected String[] serialRateStrings = {"300", "1200", "2400", "4800", "9600", "19200", "38400", "57600", "74880", "115200", "230400", "250000", "500000", "1000000", "2000000"};
 
   public AbstractMonitor(BoardPort boardPort) {
-    super(boardPort.getLabel());
+    super();
+    popout=new JFrame(boardPort.getLabel());
+
     this.boardPort = boardPort;
 
-    addWindowListener(new WindowAdapter() {
+    popout.addWindowListener(new WindowAdapter() {
       @Override
       public void windowClosing(WindowEvent event) {
         try {
@@ -41,8 +44,9 @@ public abstract class AbstractMonitor extends JFrame implements ActionListener {
 
     // obvious, no?
     KeyStroke wc = Editor.WINDOW_CLOSE_KEYSTROKE;
-    getRootPane().getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(wc, "close");
-    getRootPane().getActionMap().put("close", (new AbstractAction() {
+    final JRootPane rootPane = popout.getRootPane();
+    rootPane.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(wc, "close");
+    rootPane.getActionMap().put("close", (new AbstractAction() {
       @Override
       public void actionPerformed(ActionEvent event) {
         try {
@@ -55,11 +59,12 @@ public abstract class AbstractMonitor extends JFrame implements ActionListener {
     }));
 
 
-    onCreateWindow(getContentPane());
+    final Container contentPane = popout.getContentPane();
+    onCreateWindow(contentPane);
 
-    this.setMinimumSize(new Dimension(getContentPane().getMinimumSize().width, this.getPreferredSize().height));
+    this.setMinimumSize(new Dimension(contentPane.getMinimumSize().width, this.getPreferredSize().height));
 
-    pack();
+    popout.pack();
 
     Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
     String locationStr = PreferencesData.get("last.serial.location");
@@ -114,7 +119,7 @@ public abstract class AbstractMonitor extends JFrame implements ActionListener {
   }
 
   public void dispose() {
-    super.dispose();
+    popout.dispose();
     portExistsTimer.stop();
   }
 
@@ -179,7 +184,7 @@ public abstract class AbstractMonitor extends JFrame implements ActionListener {
     if (boardPort == null) {
       return;
     }
-    setTitle(boardPort.getLabel());
+    popout.setTitle(boardPort.getLabel());
     this.boardPort = boardPort;
   }
 

@@ -262,7 +262,7 @@ public class SerialPlotter extends SerialMonitorBase {
 
     textField = new JTextField(40);
     // textField is selected every time the window is focused
-    addWindowFocusListener(new WindowAdapter() {
+    popout.addWindowFocusListener(new WindowAdapter() {
       @Override
       public void windowGainedFocus(WindowEvent e) {
         textField.requestFocusInWindow();
@@ -317,25 +317,25 @@ public class SerialPlotter extends SerialMonitorBase {
     pane.add(lineEndings);
 
     applyPreferences();
-
-    onSendCommand((ActionEvent event) -> {
-      send(textField.getText());
-      textField.setText("");
-    });
- 
+//commented out to pick up 'unbuffered' changes:
+//    onSendCommand((ActionEvent event) -> {
+//      send(textField.getText());
+//      textField.setText("");
+//    });
+//
   }
 
   public void onSendCommand(ActionListener listener) {
     textField.addActionListener(listener);
     sendButton.addActionListener(listener);
   }
-
-  public void applyPreferences() {
-    // Apply line endings.
-    if (PreferencesData.get("serial.line_ending") != null) {
-      lineEndings.setSelectedIndex(PreferencesData.getInteger("serial.line_ending"));
-    }
-  }
+// commented out to see what the consequences are of the base class actions, which include this.
+//  public void applyPreferences() {
+//    // Apply line endings.
+//    if (PreferencesData.get("serial.line_ending") != null) {
+//      lineEndings.setSelectedIndex(PreferencesData.getInteger("serial.line_ending"));
+//    }
+//  }
 
   protected void onEnableWindow(boolean enable) {
     textField.setEnabled(enable);

@@ -91,7 +91,7 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
 
     textField = new JTextField(40);
     // textField is selected every time the window is focused
-    addWindowFocusListener(new WindowAdapter() {
+    popout.addWindowFocusListener(new WindowAdapter() {
       @Override
       public void windowGainedFocus(WindowEvent e) {
         textField.requestFocusInWindow();
