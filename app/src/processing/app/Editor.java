@@ -2254,16 +2254,15 @@ public class Editor extends JFrame implements RunnerListener {
   }
   /** @returns whether a popup should actually pop-up */
   public boolean onSerialMonitorChange(AbstractTextMonitor serialDisplay){
-    if(PreferencesData.getBoolean("editor.dock", false)) {
-      Component rootpanel =  serialDisplay.popout.getComponent(0);
-        if(rootpanel instanceof JRootPane){
+    if (PreferencesData.getBoolean("editor.dock", false)) {
+      if (!(serialDisplay instanceof SerialPlotter)) {//not yet ready to test plotter in window
+        Component rootpanel = serialDisplay.popout.getComponent(0);
+        if (rootpanel instanceof JRootPane) {
           serialDisplay.popout.remove(rootpanel);
+          serPanel.add(rootpanel);
+          return false;
         }
-
-      if(serialDisplay!=null && !(serialDisplay instanceof SerialPlotter)) {//not yet ready to test plotter in window
-        serPanel.add(rootpanel);
       }
-      return false;
     }
     return true;
   }
