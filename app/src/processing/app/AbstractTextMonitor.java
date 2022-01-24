@@ -155,7 +155,7 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
     }
 
     serialRates.setMaximumSize(serialRates.getMinimumSize());
-
+//todo: (980F) make a subpane for this group so that we can leave it enabled even when the text area is disabled due to lack of connection.
     pane.add(autoscrollBox);
     pane.add(addTimeStampBox);
     if(PreferencesData.has("serial.unbuffered")){//[980f]

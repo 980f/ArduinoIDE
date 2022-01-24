@@ -24,6 +24,7 @@ package processing.app;
 
 import processing.app.helpers.FileUtils;
 
+//import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,30 +49,34 @@ public class SketchFile {
   /**
    * The sketch this file belongs to.
    */
-  private Sketch sketch;
+  private final Sketch sketch;
 
   /**
    * Is this the primary file in the sketch?
    */
-  private boolean primary;
+  private final boolean primary;
+  /**
+   * this is set to the 'lastModified' time of the file when loaded
+   * */
+  private long loadedTimestamp;
 
   /**
    * Interface for an in-memory storage of text file contents. This is
    * intended to allow a GUI to keep modified text in memory, and allow
    * SketchFile to check for changes when needed.
    */
-  public static interface TextStorage {
+  public interface TextStorage {
     /** Get the current text */
-    public String getText();
+    String getText();
 
     /**
      * Is the text modified externally, after the last call to
      * clearModified() or setText()?
      */
-    public boolean isModified();
+    boolean isModified();
 
     /** Clear the isModified() result value */
-    public void clearModified();
+    void clearModified();
   }
 
   /**
@@ -88,8 +93,6 @@ public class SketchFile {
    *          The sketch this file belongs to
    * @param file
    *          The file this SketchFile represents
-   * @param primary
-   *          Whether this file is the primary file of the sketch
    */
   public SketchFile(Sketch sketch, File file) {
     this.sketch = sketch;
@@ -136,7 +139,7 @@ public class SketchFile {
     }
 
     List<Path> tempBuildFolders = Stream.of(tempBuildFolder, tempBuildFolder.resolve("sketch"))
-        .filter(path -> Files.exists(path)).collect(Collectors.toList());
+        .filter(Files::exists).collect(Collectors.toList());
 
     for (Path folder : tempBuildFolders) {
       if (!deleteCompiledFilesFrom(folder)) {
@@ -259,6 +262,8 @@ public class SketchFile {
       throw new IOException();
     }
 
+    loadedTimestamp=file.lastModified();
+
     if (text.indexOf('\uFFFD') != -1) {
       System.err.println(
         I18n.format(
@@ -283,6 +288,20 @@ public class SketchFile {
   public void save() throws IOException {
     if (storage == null)
       return; /* Nothing to do */
+
+    if(file.exists()) {//980F: deal with externally modified files, rather than just overwriting them losing external changes.
+      long externalModified = file.lastModified();
+      //ignore direction of change, someone may have restored from a backup
+      if (externalModified != loadedTimestamp) { //Houston we have a problem!
+        //until we have a dialog make a backup:
+        File newFile = new File(file.getParentFile(), file.getName()+".replaced");
+        sketch.checkNewFilename(newFile);
+        if (!file.renameTo(newFile)) {
+          String msg = I18n.format(tr("Failed to rename externally changed \"{0}\" to \"{1}\""), file.getName(), newFile.getName());
+          throw new IOException(msg);
+        }
+      }
+    }
 
     BaseNoGui.saveFile(storage.getText(), file);
     storage.clearModified();

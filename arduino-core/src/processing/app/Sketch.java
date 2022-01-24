@@ -109,7 +109,7 @@ public class Sketch {
    * @return true when the list of files was changed, false when it was
    * not.
    */
-  public boolean reload() throws IOException {
+  public boolean  reload() throws IOException {
     List<SketchFile> reloaded = listSketchFiles(false);
     if (!reloaded.equals(files)) {
       files = reloaded;

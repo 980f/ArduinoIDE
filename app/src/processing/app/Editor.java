@@ -156,7 +156,7 @@ public class Editor extends JFrame implements RunnerListener {
   static final KeyStroke WINDOW_CLOSE_KEYSTROKE =
     KeyStroke.getKeyStroke('W', SHORTCUT_KEY_MASK);
   /** Command-Option on Mac OS X, Ctrl-Alt on Windows and Linux */
-  static final int SHORTCUT_ALT_KEY_MASK = ActionEvent.ALT_MASK |
+  static final int SHORTCUT_ALT_KEY_MASK = InputEvent.ALT_MASK |
     Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
   /**
@@ -718,7 +718,7 @@ public class Editor extends JFrame implements RunnerListener {
 
     sketchMenu.addSeparator();
 
-    item = newJMenuItem(tr("Show Sketch Folder"), 'K');
+    item = new JMenuItem(tr("Show Sketch Folder"), 'K');
     item.addActionListener(event -> Base.openFolder(sketch.getFolder()));
     sketchMenu.add(item);
     item.setEnabled(Base.openFolderAvailable());
@@ -738,14 +738,8 @@ public class Editor extends JFrame implements RunnerListener {
     item.addActionListener(event->{
       Base base = Base.forhacking;
       Editor activeEditor = base.getActiveEditor();
-      try {
-        activeEditor.handleSave(true);//blocking save until we confirm this is the source of losses experienced on the rpi.
-        if (activeEditor.getSketch().reload()) {
-          activeEditor.createTabs();
-        }
-      } catch (IOException e) {
-        System.err.println(e.getMessage());
-      }
+      activeEditor.handleSave(false);//true: blocking save unless we also want to Swinglater the createTabs
+      SwingUtilities.invokeLater(activeEditor::createTabs);
     });
     sketchMenu.add(item);
   }
@@ -1277,7 +1271,7 @@ public class Editor extends JFrame implements RunnerListener {
     menu.add(increaseFontSizeItem);
     // Many keyboards have '+' and '=' on the same key. Allowing "CTRL +",
     // "CTRL SHIFT +" and "CTRL =" covers the generally expected behavior.
-    KeyStroke ctrlShiftEq = KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, SHORTCUT_KEY_MASK | ActionEvent.SHIFT_MASK);
+    KeyStroke ctrlShiftEq = KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, SHORTCUT_KEY_MASK | InputEvent.SHIFT_MASK);//was wrong enum that happened to be correct value.
     menu.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(ctrlShiftEq, "IncreaseFontSize");
     KeyStroke ctrlEq = KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, SHORTCUT_KEY_MASK);
     menu.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(ctrlEq, "IncreaseFontSize");
@@ -1372,7 +1366,7 @@ public class Editor extends JFrame implements RunnerListener {
   // Control + Shift + K seems to not be working on linux (Xubuntu 17.04, 2017-08-19)
   static public JMenuItem newJMenuItemShift(String title, int what) {
     JMenuItem menuItem = new JMenuItem(title);
-    menuItem.setAccelerator(KeyStroke.getKeyStroke(what, SHORTCUT_KEY_MASK | ActionEvent.SHIFT_MASK));
+    menuItem.setAccelerator(KeyStroke.getKeyStroke(what, SHORTCUT_KEY_MASK | InputEvent.SHIFT_MASK));
     return menuItem;
   }
 
@@ -1466,9 +1460,9 @@ public class Editor extends JFrame implements RunnerListener {
    * Returns an (unmodifiable) list of currently opened tabs in mru order.
    */
   public List<EditorTab> getMRU() {
-    mru.removeIf(tab-> tabs.indexOf(tab) < 0);//discard dead tabs
+    mru.removeIf(tab-> !tabs.contains(tab));//discard dead tabs
     tabs.forEach(tab->{
-      if(mru.indexOf(tab)<0){
+      if(!mru.contains(tab)){
         mru.add(tab);
       }
     });
