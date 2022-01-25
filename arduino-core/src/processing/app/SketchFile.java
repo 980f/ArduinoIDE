@@ -27,6 +27,8 @@ import processing.app.helpers.FileUtils;
 //import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -57,7 +59,7 @@ public class SketchFile {
   private final boolean primary;
   /**
    * this is set to the 'lastModified' time of the file when loaded
-   * */
+   */
   private long loadedTimestamp;
 
   /**
@@ -66,7 +68,9 @@ public class SketchFile {
    * SketchFile to check for changes when needed.
    */
   public interface TextStorage {
-    /** Get the current text */
+    /**
+     * Get the current text
+     */
     String getText();
 
     /**
@@ -75,7 +79,9 @@ public class SketchFile {
      */
     boolean isModified();
 
-    /** Clear the isModified() result value */
+    /**
+     * Clear the isModified() result value
+     */
     void clearModified();
   }
 
@@ -89,17 +95,15 @@ public class SketchFile {
   /**
    * Create a new SketchFile
    *
-   * @param sketch
-   *          The sketch this file belongs to
-   * @param file
-   *          The file this SketchFile represents
+   * @param sketch The sketch this file belongs to
+   * @param file   The file this SketchFile represents
    */
   public SketchFile(Sketch sketch, File file) {
     this.sketch = sketch;
     this.file = file;
     FileUtils.SplitFile split = FileUtils.splitFilename(file);
     this.primary = split.basename.equals(sketch.getFolder().getName())
-        && Sketch.SKETCH_EXTENSIONS.contains(split.extension);
+      && Sketch.SKETCH_EXTENSIONS.contains(split.extension);
   }
 
   /**
@@ -139,7 +143,7 @@ public class SketchFile {
     }
 
     List<Path> tempBuildFolders = Stream.of(tempBuildFolder, tempBuildFolder.resolve("sketch"))
-        .filter(Files::exists).collect(Collectors.toList());
+      .filter(Files::exists).collect(Collectors.toList());
 
     for (Path folder : tempBuildFolders) {
       if (!deleteCompiledFilesFrom(folder)) {
@@ -170,12 +174,10 @@ public class SketchFile {
   /**
    * Rename the given file to get the given name.
    *
-   * @param newName
-   *          The new name, including extension, excluding directory
-   *          name.
-   * @throws IOException
-   *           When a problem occurs, or is expected to occur. The error
-   *           message should be already translated.
+   * @param newName The new name, including extension, excluding directory
+   *                name.
+   * @throws IOException When a problem occurs, or is expected to occur. The error
+   *                     message should be already translated.
    */
   public void renameTo(String newName) throws IOException {
     File newFile = new File(file.getParentFile(), newName);
@@ -262,7 +264,7 @@ public class SketchFile {
       throw new IOException();
     }
 
-    loadedTimestamp=file.lastModified();
+    loadedTimestamp = file.lastModified();
 
     if (text.indexOf('\uFFFD') != -1) {
       System.err.println(
@@ -289,12 +291,13 @@ public class SketchFile {
     if (storage == null)
       return; /* Nothing to do */
 
-    if(file.exists()) {//980F: deal with externally modified files, rather than just overwriting them losing external changes.
+    if (file.exists()) {//980F: deal with externally modified files, rather than just overwriting them losing external changes.
       long externalModified = file.lastModified();
       //ignore direction of change, someone may have restored from a backup
       if (externalModified != loadedTimestamp) { //Houston we have a problem!
         //until we have a dialog make a backup:
-        File newFile = new File(file.getParentFile(), file.getName()+".replaced");
+        Path external = FileSystems.getDefault().getPath(file.getPath());
+        File newFile =  new File(Files.isSymbolicLink(external)?Files.readSymbolicLink(external).getFileName().toString() : file.getCanonicalPath()+ ".replaced");
         sketch.checkNewFilename(newFile);
         if (!file.renameTo(newFile)) {
           String msg = I18n.format(tr("Failed to rename externally changed \"{0}\" to \"{1}\""), file.getName(), newFile.getName());
@@ -302,7 +305,6 @@ public class SketchFile {
         }
       }
     }
-
     BaseNoGui.saveFile(storage.getText(), file);
     storage.clearModified();
   }

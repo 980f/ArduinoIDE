@@ -738,8 +738,13 @@ public class Editor extends JFrame implements RunnerListener {
     item.addActionListener(event->{
       Base base = Base.forhacking;
       Editor activeEditor = base.getActiveEditor();
-      activeEditor.handleSave(false);//true: blocking save unless we also want to Swinglater the createTabs
-      SwingUtilities.invokeLater(activeEditor::createTabs);
+      activeEditor.handleSave(true);//true: blocking save unless we also want to Swinglater the createTabs
+      try {
+        sketch.reload();//needed to pick up new files, but ignore return to also reload code in files already present.
+        activeEditor.createTabs();//modified to save changes as 'whatever.replaced' before loading new content.
+      } catch (IOException ignored) {
+        //todo: add popup warning once Refresh Sketch is adopted by community.
+      }
     });
     sketchMenu.add(item);
   }
