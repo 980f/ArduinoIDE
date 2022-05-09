@@ -35,7 +35,7 @@ import java.awt.Component;
 import javax.swing.JTable;
 import javax.swing.table.TableCellRenderer;
 
-@SuppressWarnings("serial")
+//@SuppressWarnings("serial")
 public class ContributedLibraryTableCellRenderer implements TableCellRenderer {
 
   public Component getTableCellRendererComponent(JTable table, Object value,
@@ -53,7 +53,7 @@ public class ContributedLibraryTableCellRenderer implements TableCellRenderer {
       cell.setBackground(new Color(255, 255, 255));
     }
 
-    int height = new Double(cell.getPreferredSize().getHeight()).intValue();
+    int height = (int) cell.getPreferredSize().getHeight();
     if (table.getRowHeight(row) < height) {
       table.setRowHeight(row, height);
     }

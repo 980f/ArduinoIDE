@@ -168,7 +168,7 @@ public class BaseNoGui {
     // Add all tools dependencies from the (possibily) referenced core
     String core = prefs.get("build.core");
     if (core != null && core.contains(":")) {
-      String split[] = core.split(":");
+      String []split = core.split(":");
       TargetPlatform referenced = BaseNoGui.getCurrentTargetPlatformFromPackage(split[0]);
       if (referenced != null) {
         ContributedPlatform referencedPlatform = indexer.getContributedPlaform(referenced);
@@ -519,7 +519,7 @@ public class BaseNoGui {
       } else if (OSUtils.isLinux()) {
         platformClass = Class.forName("processing.app.linux.Platform");
       }
-      platform = (Platform) platformClass.newInstance();
+      platform = (Platform) platformClass.getDeclaredConstructor().newInstance();
     } catch (Exception e) {
       showError(tr("Problem Setting the Platform"),
                 tr("An unknown error occurred while trying to load\n" +
@@ -553,7 +553,7 @@ public class BaseNoGui {
       return;
     }
 
-    String list[] = folder.list(new OnlyDirs());
+    String[] list = folder.list(new OnlyDirs());
 
     // if a bad folder or something like that, this might come back null
     if (list == null) {
@@ -728,7 +728,7 @@ public class BaseNoGui {
     importToLibraryTable = new HashMap<>();
     for (UserLibrary lib : librariesIndexer.getInstalledLibraries()) {
       try {
-        String headers[] = headerListFromIncludePath(lib.getSrcFolder());
+        String[] headers = headerListFromIncludePath(lib.getSrcFolder());
         for (String header : headers) {
           LibraryList list = importToLibraryTable.get(header);
           if (list == null) {
@@ -814,7 +814,7 @@ public class BaseNoGui {
     }
   }
 
-  static public void initParameters(String args[]) throws Exception {
+  static public void initParameters(String[] args) throws Exception {
     String preferencesFile = null;
 
     // Do a first pass over the commandline arguments, the rest of them
@@ -826,7 +826,7 @@ public class BaseNoGui {
       if (args[i].equals("--preferences-file")) {
         ++i;
         preferencesFile = args[i];
-        continue;
+//        continue;
       }
     }
 
@@ -848,7 +848,7 @@ public class BaseNoGui {
    * underscores. Also disallows starting the sketch name with a digit.
    */
   static public String sanitizeName(String origName) {
-    char c[] = origName.toCharArray();
+    char[] c = origName.toCharArray();
     StringBuffer buffer = new StringBuffer();
 
     for (int i = 0; i < c.length; i++) {
@@ -887,9 +887,9 @@ public class BaseNoGui {
     // Split the file content using minimum common separator \n
     // then trim any other character (\r) so saveStrings can print it in the correct
     // format for every OS
-    String strArray[] = str.split("\n");
+    String[] strArray = str.split("\n");
     for (String item : strArray) {
-      item.trim();
+      item.trim();//980F: BUG, this does nothing, you must assign to the array to get the trimmed string into the array, trim() does not mutate its argument.
     }
     PApplet.saveStrings(temp, strArray);
 

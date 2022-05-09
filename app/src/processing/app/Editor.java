@@ -908,7 +908,7 @@ public class Editor extends JFrame implements RunnerListener {
         if (className == null) continue;
 
         Class<?> toolClass = Class.forName(className, true, loader);
-        final Tool tool = (Tool) toolClass.newInstance();
+        final Tool tool = (Tool) toolClass.getDeclaredConstructor().newInstance();
 
         tool.init(Editor.this);
 
@@ -993,7 +993,7 @@ public class Editor extends JFrame implements RunnerListener {
     if (internalTool == null) {
       try {
         Class<?> toolClass = Class.forName(className);
-        internalTool = (Tool) toolClass.newInstance();
+        internalTool = (Tool) toolClass.getDeclaredConstructor().newInstance();
       } catch (Exception e) {
         e.printStackTrace();
         return null;//triggers NPE's in caller :(
@@ -2419,11 +2419,9 @@ public class Editor extends JFrame implements RunnerListener {
       } catch (SerialNotFoundException e) {
         SwingUtilities.invokeLater(() -> statusError(tr("Error while burning bootloader: please select a serial port.")));
       } catch (PreferencesMapException e) {
-        SwingUtilities.invokeLater(() -> {
-          statusError(I18n.format(
-            tr("Error while burning bootloader: missing '{0}' configuration parameter"),
-            e.getMessage()));
-        });
+        SwingUtilities.invokeLater(() -> statusError(I18n.format(
+          tr("Error while burning bootloader: missing '{0}' configuration parameter"),
+          e.getMessage())));
       } catch (RunnerException e) {
         SwingUtilities.invokeLater(() -> statusError(e.getMessage()));
       } catch (Exception e) {
