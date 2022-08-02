@@ -457,7 +457,7 @@ public class Theme {
     name = String.format("%s.%02d", name, i);
     PreferencesHelper.putColor(table, name, color);
     int cycleSize = getInteger(name + ".size");
-    setInteger(name + ".size", (i + 1) > cycleSize ? (i + 1) : cycleSize);
+    setInteger(name + ".size", Math.max((i + 1), cycleSize));
   }
 
   static public Color getColor(String name) {
@@ -486,7 +486,7 @@ public class Theme {
    *
    * @return The default font.
    */
-  public static final Font getDefaultFont() {
+  public static Font getDefaultFont() {
 
     // Use StyleContext to get a composite font for better Asian language
     // support; see Sun bug S282887.
@@ -516,7 +516,7 @@ public class Theme {
   }
 
   public static Map<String, Object> getStyledFont(String what, Font font) {
-    String split[] = get("editor." + what + ".style").split(",");
+    String[] split = get("editor." + what + ".style").split(",");
 
     Color color = PreferencesHelper.parseColor(split[0]);
 
@@ -605,8 +605,8 @@ public class Theme {
   private static Image imageFromSVG(URL url, int width, int height)
       throws TranscoderException {
     Transcoder t = new PNGTranscoder();
-    t.addTranscodingHint(PNGTranscoder.KEY_WIDTH, new Float(width));
-    t.addTranscodingHint(PNGTranscoder.KEY_HEIGHT, new Float(height));
+    t.addTranscodingHint(PNGTranscoder.KEY_WIDTH, width);
+    t.addTranscodingHint(PNGTranscoder.KEY_HEIGHT, height);
 
     TranscoderInput input = new TranscoderInput(url.toString());
     ByteArrayOutputStream ostream = new ByteArrayOutputStream();

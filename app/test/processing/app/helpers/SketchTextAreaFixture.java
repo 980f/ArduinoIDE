@@ -34,19 +34,19 @@ import org.fest.swing.core.Robot;
 import org.fest.swing.fixture.ComponentFixture;
 import processing.app.syntax.SketchTextArea;
 
-public class SketchTextAreaFixture extends ComponentFixture {
+public class SketchTextAreaFixture extends ComponentFixture<SketchTextArea> {
 
   private final SketchTextAreaComponentDriver driver;
-
-  public SketchTextAreaFixture(Robot robot, Class type) {
-    super(robot, type);
-    this.driver = new SketchTextAreaComponentDriver(robot);
-  }
-
-  public SketchTextAreaFixture(Robot robot, String name, Class type) {
-    super(robot, name, type);
-    this.driver = new SketchTextAreaComponentDriver(robot);
-  }
+//
+//  public SketchTextAreaFixture(Robot robot, Class type) {
+//    super(robot, type);
+//    this.driver = new SketchTextAreaComponentDriver(robot);
+//  }
+//
+//  public SketchTextAreaFixture(Robot robot, String name, Class type) {
+//    super(robot, name, type);
+//    this.driver = new SketchTextAreaComponentDriver(robot);
+//  }
 
   public SketchTextAreaFixture(Robot robot, SketchTextArea target) {
     super(robot, target);
@@ -54,29 +54,29 @@ public class SketchTextAreaFixture extends ComponentFixture {
   }
 
   public SketchTextAreaFixture enterText(String text) {
-    driver.enterText((SketchTextArea) target, text);
+    driver.enterText(target, text);
     return this;
   }
 
   public SketchTextAreaFixture setText(String text) {
-    driver.setText((SketchTextArea) target, text);
+    driver.setText(target, text);
     return this;
   }
 
   public String getText() {
-    return driver.getText((SketchTextArea) target);
+    return driver.getText(target);
   }
 
   public SketchTextAreaFixture selectAll() {
-    driver.selectAll((SketchTextArea) target);
+    driver.selectAll(target);
     return this;
   }
 
   public int getCaretPosition() {
-    return driver.getCaretPosition((SketchTextArea) target);
+    return driver.getCaretPosition(target);
   }
 
   public void setCaretPosition(int caretPosition) {
-    driver.setCaretPosition((SketchTextArea) target, caretPosition);
+    driver.setCaretPosition(target, caretPosition);
   }
 }

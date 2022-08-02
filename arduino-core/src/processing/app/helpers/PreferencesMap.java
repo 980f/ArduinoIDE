@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-@SuppressWarnings("serial")
+//@SuppressWarnings("serial")
 public class PreferencesMap extends LinkedHashMap<String, String> {
 
   public PreferencesMap(Map<String, String> table) {
@@ -99,7 +99,7 @@ public class PreferencesMap extends LinkedHashMap<String, String> {
   public void load(InputStream input) throws IOException {
     String[] lines = PApplet.loadStrings(input);
     for (String line : lines) {
-      if (line.length() == 0 || line.charAt(0) == '#')
+      if (line == null || line.length() == 0 || line.charAt(0) == '#')
         continue;
 
       int equals = line.indexOf('=');
@@ -315,7 +315,7 @@ public class PreferencesMap extends LinkedHashMap<String, String> {
    *         insensitive compared), <b>false</b> in any other case
    */
   public boolean getBoolean(String key) {
-    return Boolean.valueOf(get(key));
+    return Boolean.parseBoolean(get(key));
   }
 
   /**
@@ -329,7 +329,7 @@ public class PreferencesMap extends LinkedHashMap<String, String> {
    */
   public boolean putBoolean(String key, boolean value) {
     String prev = put(key, value ? "true" : "false");
-    return new Boolean(prev);
+    return value;
   }
 
   public String get(String key, String defaultValue) {
