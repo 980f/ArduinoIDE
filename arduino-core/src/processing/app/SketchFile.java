@@ -295,10 +295,8 @@ public class SketchFile {
       long externalModified = file.lastModified();
       //ignore direction of change, someone may have restored from a backup
       if (externalModified != loadedTimestamp) { //Houston we have a problem!
-        //until we have a dialog make a backup:
-        Path external = FileSystems.getDefault().getPath(file.getPath());
-        File newFile =  new File(Files.isSymbolicLink(external)?Files.readSymbolicLink(external).getFileName().toString() : file.getCanonicalPath()+ ".replaced");
-        sketch.checkNewFilename(newFile);
+        //until we have a dialog to merge/replace content make a backup of external changes:
+        File newFile = new File(file.toPath().toRealPath().toFile().getCanonicalFile()+".replaced");//put replacement in actual directory of file by its actual name
         if (!file.renameTo(newFile)) {
           String msg = I18n.format(tr("Failed to rename externally changed \"{0}\" to \"{1}\""), file.getName(), newFile.getName());
           throw new IOException(msg);
@@ -306,6 +304,7 @@ public class SketchFile {
       }
     }
     BaseNoGui.saveFile(storage.getText(), file);
+    loadedTimestamp = file.lastModified();
     storage.clearModified();
   }
 
@@ -319,6 +318,7 @@ public class SketchFile {
 
     BaseNoGui.saveFile(storage.getText(), newFile);
     renamedTo(newFile);
+    loadedTimestamp = file.lastModified();
     storage.clearModified();
   }
 }
