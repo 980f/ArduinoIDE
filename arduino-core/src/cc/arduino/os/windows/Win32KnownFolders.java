@@ -29,54 +29,54 @@
 
 package cc.arduino.os.windows;
 
-import static com.sun.jna.platform.win32.KnownFolders.FOLDERID_Documents;
-import static com.sun.jna.platform.win32.KnownFolders.FOLDERID_LocalAppData;
-import static com.sun.jna.platform.win32.KnownFolders.FOLDERID_RoamingAppData;
+//import static com.sun.jna.platform.win32.KnownFolders.FOLDERID_Documents;
+//import static com.sun.jna.platform.win32.KnownFolders.FOLDERID_LocalAppData;
+//import static com.sun.jna.platform.win32.KnownFolders.FOLDERID_RoamingAppData;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 
-import com.sun.jna.platform.win32.Shell32Util;
-import com.sun.jna.platform.win32.ShlObj;
+//import com.sun.jna.platform.win32.Shell32Util;
+//import com.sun.jna.platform.win32.ShlObj;
 
 import processing.app.PreferencesData;
 
 public class Win32KnownFolders {
 
   public static File getLocalAppDataFolder() {
-    try {
-      return new File(Shell32Util.getKnownFolderPath(FOLDERID_LocalAppData));
-    } catch (Throwable t) {
-      // Ignore error if API call is not available
-    }
-    return new File(Shell32Util.getFolderPath(ShlObj.CSIDL_LOCAL_APPDATA));
+//    try {
+//      return new File(Shell32Util.getKnownFolderPath(FOLDERID_LocalAppData));
+//    } catch (Throwable t) {
+//      // Ignore error if API call is not available
+//    }
+    return new File("dummy");//Shell32Util.getFolderPath(ShlObj.CSIDL_LOCAL_APPDATA));
   }
 
   public static File getRoamingAppDataFolder() {
-    try {
-      return new File(Shell32Util.getKnownFolderPath(FOLDERID_RoamingAppData));
-    } catch (Throwable t) {
-      // Ignore error if API call is not available
-    }
-    return new File(Shell32Util.getFolderPath(ShlObj.CSIDL_APPDATA));
+//    try {
+//      return new File(Shell32Util.getKnownFolderPath(FOLDERID_RoamingAppData));
+//    } catch (Throwable t) {
+//      // Ignore error if API call is not available
+//    }
+    return new File("dummy");//Shell32Util.getFolderPath(ShlObj.CSIDL_APPDATA));
   }
 
   public static File getDocumentsFolder() {
-    try {
-    return new File(Shell32Util.getKnownFolderPath(FOLDERID_Documents));
-    } catch (Throwable t) {
-      // Ignore error if API call is not available
-    }
-    return new File(Shell32Util.getFolderPath(ShlObj.CSIDL_MYDOCUMENTS));
+//    try {
+//    return new File(Shell32Util.getKnownFolderPath(FOLDERID_Documents));
+//    } catch (Throwable t) {
+//      // Ignore error if API call is not available
+//    }
+    return new File("dummy");//Shell32Util.getFolderPath(ShlObj.CSIDL_MYDOCUMENTS));
   }
 
   public static File getLocalCacheFolder() throws FileNotFoundException {
-    if (!PreferencesData.getBoolean("runtime.is-windows-store-app")) {
-      throw new FileNotFoundException();
-    }
-    String localAppData = Shell32Util.getKnownFolderPath(FOLDERID_LocalAppData);
-    String appId = PreferencesData.get("runtime.windows-store-app.id");
-    return Paths.get(localAppData, "Packages", appId, "LocalCache").toFile();
+//    if (!PreferencesData.getBoolean("runtime.is-windows-store-app")) {
+//      throw new FileNotFoundException();
+//    }
+//    String localAppData = Shell32Util.getKnownFolderPath(FOLDERID_LocalAppData);
+//    String appId = PreferencesData.get("runtime.windows-store-app.id");
+    return new File("dummy");//Paths.get(//localAppData, "Packages", appId, "LocalCache").toFile();
   }
 }
