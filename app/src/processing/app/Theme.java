@@ -486,7 +486,7 @@ public class Theme {
    *
    * @return The default font.
    */
-  public static Font getDefaultFont() {
+  public static final Font getDefaultFont() {
 
     // Use StyleContext to get a composite font for better Asian language
     // support; see Sun bug S282887.

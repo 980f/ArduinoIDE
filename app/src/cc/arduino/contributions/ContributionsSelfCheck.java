@@ -35,7 +35,6 @@ import cc.arduino.contributions.libraries.filters.UpdatableLibraryPredicate;
 import cc.arduino.contributions.packages.ContributionInstaller;
 import cc.arduino.contributions.packages.filters.UpdatablePlatformPredicate;
 import cc.arduino.view.NotificationPopup;
-import org.apache.logging.log4j.LogManager;
 import processing.app.*;
 
 import javax.swing.*;

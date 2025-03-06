@@ -33,8 +33,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.io.IOException;
-import java.util.List;
-import java.util.function.Consumer;
 
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -45,7 +43,11 @@ import javax.swing.ToolTipManager;
 import javax.swing.border.MatteBorder;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
-import javax.swing.text.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Element;
+import javax.swing.text.PlainDocument;
+import javax.swing.text.DefaultCaret;
+import javax.swing.text.Document;
 
 import org.apache.commons.lang3.StringUtils;
 import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;

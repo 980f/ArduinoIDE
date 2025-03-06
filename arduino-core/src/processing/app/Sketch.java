@@ -106,10 +106,9 @@ public class Sketch {
    * to see if any files were added or removed. This does *not* check
    * the contents of the files, just their presence.
    *
-   * @return true when the list of files was changed, false when it was
-   * not.
+   * @return true when the list of files was changed, false when it was not.
    */
-  public boolean  reload() throws IOException {
+  public boolean reload() throws IOException {
     List<SketchFile> reloaded = listSketchFiles(false);
     if (!reloaded.equals(files)) {
       files = reloaded;
@@ -293,8 +292,7 @@ public class Sketch {
    * the file already exists in this sketch. If so, an IOEXception is
    * thrown.
    *
-   * @param newFile The filename of the new file, or the new name for an
-   *                existing file.
+   * @param newFile The filename of the new file, or the new name for an existing file.
    */
   protected void checkNewFilename(File newFile) throws IOException {
     // Verify that the sketch doesn't have a filem with the new name
@@ -311,10 +309,8 @@ public class Sketch {
    * This operation does not *save* the sketch, so the files on disk are
    * moved, but not modified.
    *
-   * @param newFolder The new folder name for this sketch. The new primary
-   *                  file's name will be derived from this.
-   * @throws IOException When a problem occurs. The error message should be
-   *                     already translated.
+   * @param newFolder The new folder name for this sketch. The new primary file's name will be derived from this.
+   * @throws IOException When a problem occurs. The error message should be already translated.
    */
   public void renameTo(File newFolder) throws IOException {
     // Check intended rename (throws if there is a problem)
@@ -353,10 +349,8 @@ public class Sketch {
    * Save this sketch under the new name given. Unlike renameTo(), this
    * leaves the existing sketch in place.
    *
-   * @param newFolder The new folder name for this sketch. The new primary
-   *                  file's name will be derived from this.
-   * @throws IOException When a problem occurs. The error message should be
-   *                     already translated.
+   * @param newFolder The new folder name for this sketch. The new primary file's name will be derived from this.
+   * @throws IOException When a problem occurs. The error message should be already translated.
    */
   public void saveAs(File newFolder) throws IOException {
     // Check intented rename (throws if there is a problem)
@@ -399,6 +393,4 @@ public class Sketch {
   void delete() {
     FileUtils.recursiveDelete(folder);
   }
-
-
 }

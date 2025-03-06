@@ -11,7 +11,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 @SuppressWarnings("serial")
-public abstract class AbstractMonitor extends JPanel implements ActionListener {
+public abstract class AbstractMonitor extends JFrame implements ActionListener {
 
   JFrame popout;
   private boolean closed;

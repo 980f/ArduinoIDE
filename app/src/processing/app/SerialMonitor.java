@@ -19,16 +19,47 @@
 package processing.app;
 
 import cc.arduino.packages.BoardPort;
+import processing.app.legacy.PApplet;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
+import static processing.app.I18n.tr;
+
 @SuppressWarnings("serial")
-public class SerialMonitor extends SerialMonitorBase {
+public class SerialMonitor extends SerialMonitorBase {//was AbstractTextMonitor
+
+  private Serial serial;
+  private int serialRate;
+
+  private static final int COMMAND_HISTORY_SIZE = 100;
+  private final CommandHistory commandHistory =
+      new CommandHistory(COMMAND_HISTORY_SIZE);
 
   public SerialMonitor(BoardPort port) {
     super(port);
+
+    serialRate = PreferencesData.getInteger("serial.debug_rate");
+    serialRates.setSelectedItem(serialRate + " " + tr("baud"));
+    onSerialRateChange((ActionEvent event) -> {
+      String wholeString = (String) serialRates.getSelectedItem();
+      String rateString = wholeString.substring(0, wholeString.indexOf(' '));
+      serialRate = Integer.parseInt(rateString);
+      PreferencesData.set("serial.debug_rate", rateString);
+      if (serial != null) {
+        try {
+          close();
+          Thread.sleep(100); // Wait for serial port to properly close
+          open();
+        } catch (InterruptedException e) {
+          // noop
+        } catch (Exception e) {
+          System.err.println(e);
+        }
+      }
+    });
 
     onSendCommand((ActionEvent event) -> {
       String command = textField.getText();
@@ -76,4 +107,5 @@ public class SerialMonitor extends SerialMonitorBase {
     });
   }
 
+  
 }

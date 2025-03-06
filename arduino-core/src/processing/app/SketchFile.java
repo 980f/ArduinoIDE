@@ -24,7 +24,6 @@ package processing.app;
 
 import processing.app.helpers.FileUtils;
 
-//import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -68,9 +67,7 @@ public class SketchFile {
    * SketchFile to check for changes when needed.
    */
   public interface TextStorage {
-    /**
-     * Get the current text
-     */
+    /** Get the current text */
     String getText();
 
     /**
@@ -79,9 +76,7 @@ public class SketchFile {
      */
     boolean isModified();
 
-    /**
-     * Clear the isModified() result value
-     */
+    /** Clear the isModified() result value */
     void clearModified();
   }
 
@@ -174,10 +169,8 @@ public class SketchFile {
   /**
    * Rename the given file to get the given name.
    *
-   * @param newName The new name, including extension, excluding directory
-   *                name.
-   * @throws IOException When a problem occurs, or is expected to occur. The error
-   *                     message should be already translated.
+   * @param newName The new name, including extension, excluding directory name.
+   * @throws IOException When a problem occurs, or is expected to occur. The error message should be already translated.
    */
   public void renameTo(String newName) throws IOException {
     File newFile = new File(file.getParentFile(), newName);

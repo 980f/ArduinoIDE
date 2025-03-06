@@ -162,8 +162,5 @@ public class EditorLineStatus extends JComponent {
       setBoardName("-");
     }
     setPort(PreferencesData.get("serial.port"));
-
-
-
   }
 }

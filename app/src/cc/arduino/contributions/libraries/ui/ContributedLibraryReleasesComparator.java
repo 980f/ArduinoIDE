@@ -54,13 +54,13 @@ public class ContributedLibraryReleasesComparator implements Comparator<Contribu
     if (types1 == null) types1 = Arrays.asList();
     if (types2 == null) types2 = Arrays.asList();
 
-    if (types1.contains(firstType) && types2.contains(firstType)) {
+    if (lib1.getTypes().contains(firstType) && lib2.getTypes().contains(firstType)) {
       return compareName(lib1, lib2);
     }
-    if (types1.contains(firstType)) {
+    if (lib1.getTypes().contains(firstType)) {
       return -1;
     }
-    if (types2.contains(firstType)) {
+    if (lib2.getTypes().contains(firstType)) {
       return 1;
     }
     return compareName(lib1, lib2);

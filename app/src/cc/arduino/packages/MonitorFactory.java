@@ -29,14 +29,13 @@
 
 package cc.arduino.packages;
 
-import processing.app.*;
+import processing.app.AbstractMonitor;
+import processing.app.NetworkMonitor;
+import processing.app.SerialMonitor;
 
 public class MonitorFactory {
 
-  public AbstractTextMonitor newMonitor(BoardPort port) {
-    if(port==null){
-      return null;
-    }
+  public AbstractMonitor newMonitor(BoardPort port) {
     if ("network".equals(port.getProtocol())) {
       if ("yes".equals(port.getPrefs().get("ssh_upload"))) {
         // the board is SSH capable

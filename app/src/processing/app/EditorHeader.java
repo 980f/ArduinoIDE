@@ -331,7 +331,7 @@ public class EditorHeader extends JComponent {
         SketchFile file = tab.getSketchFile();
         final int index = i++;
         item = new JMenuItem(file.getPrettyName());
-        item.addActionListener((ActionEvent e) -> editor.selectMruTab(index));//[980] must match outer iteration.
+        item.addActionListener((ActionEvent e) -> editor.selectMruTab(index));//[980F] must match outer iteration.
         menu.add(item);
       }
     }

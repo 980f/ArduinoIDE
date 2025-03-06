@@ -41,6 +41,7 @@ public class SerialPlotter extends SerialMonitorBase {
 
   private final StringBuffer messageBuffer;
   private JComboBox<String> serialRates;
+//  private int serialRate;
   private int xCount;
 
   private JLabel noLineEndingAlert;

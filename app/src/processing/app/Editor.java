@@ -43,6 +43,8 @@ import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
@@ -61,7 +63,22 @@ import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import javax.swing.*;
+import javax.swing.AbstractAction;
+import javax.swing.Box;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.TransferHandler;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import javax.swing.text.BadLocationException;
@@ -98,7 +115,7 @@ import processing.app.tools.Tool;
 /**
  * Main editor panel for the Processing Development Environment.
  */
-//Redundatn suppression @SuppressWarnings("serial")
+//Redundant suppression @SuppressWarnings("serial")
 public class Editor extends JFrame implements RunnerListener {
 
   public static final int MAX_TIME_AWAITING_FOR_RESUMING_SERIAL_MONITOR = 10000;
@@ -156,7 +173,7 @@ public class Editor extends JFrame implements RunnerListener {
   static final KeyStroke WINDOW_CLOSE_KEYSTROKE =
     KeyStroke.getKeyStroke('W', SHORTCUT_KEY_MASK);
   /** Command-Option on Mac OS X, Ctrl-Alt on Windows and Linux */
-  static final int SHORTCUT_ALT_KEY_MASK = InputEvent.ALT_MASK |
+  static final int SHORTCUT_ALT_KEY_MASK = InputEvent.ALT_MASK |  //980f: original has ActionEvent
     Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
   /**
@@ -221,7 +238,7 @@ public class Editor extends JFrame implements RunnerListener {
   private JMenuItem redoItem;
 
   private FindReplace find;
-
+//98f: use concrete types to aid debugging
   BuildHandler runHandler;
   BuildHandler presentHandler;
   private BuildHandler runAndSaveHandler;
@@ -266,7 +283,7 @@ public class Editor extends JFrame implements RunnerListener {
           for (Component menuItem : toolsMenu.getMenuComponents()) {
             if (menuItem instanceof JComponent) {
               Object removeOnWindowDeactivation = ((JComponent) menuItem).getClientProperty("removeOnWindowDeactivation");
-              if (removeOnWindowDeactivation != null && Boolean.parseBoolean(removeOnWindowDeactivation.toString())) {
+              if (removeOnWindowDeactivation != null && Boolean.parseBoolean(removeOnWindowDeactivation.toString())) {//980f: valueOf vs parseBoolean
                 toolsMenuItemsToRemove.add(menuItem);
               }
             }
@@ -802,6 +819,20 @@ public class Editor extends JFrame implements RunnerListener {
     toolsMenu.add(item);
 
     toolsMenu.addMenuListener(new StubMenuListener() {
+      public JMenuItem getSelectedItemRecursive(JMenu menu) {
+        int count = menu.getItemCount();
+        for (int i=0; i < count; i++) {
+          JMenuItem item = menu.getItem(i);
+
+          if ((item instanceof JMenu))
+            item = getSelectedItemRecursive((JMenu)item);
+
+          if (item != null && item.isSelected())
+            return item;
+        }
+        return null;
+      }
+
       public void menuSelected(MenuEvent e) {
         //System.out.println("Tools menu selected.");
         populatePortMenu();
@@ -813,15 +844,9 @@ public class Editor extends JFrame implements RunnerListener {
             String basename = name;
             int index = name.indexOf(':');
             if (index > 0) basename = name.substring(0, index);
-            String sel = null;
-            int count = menu.getItemCount();
-            for (int i=0; i < count; i++) {
-              JMenuItem item = menu.getItem(i);
-              if (item != null && item.isSelected()) {
-                sel = item.getText();
-                if (sel != null) break;
-              }
-            }
+
+            JMenuItem item = getSelectedItemRecursive(menu);
+            String sel = item != null ? item.getText() : null;
             if (sel == null) {
               if (!name.equals(basename)) menu.setText(basename);
             } else {
@@ -843,7 +868,7 @@ public class Editor extends JFrame implements RunnerListener {
       return;
 
     Map<String, JMenuItem> toolItems = new HashMap<>();
-
+//980f: original has old syntax and missing return
     File[] folders = sourceFolder.listFiles(folder -> {
       if (folder.isDirectory()) {
         //System.out.println("checking " + folder);
@@ -1444,7 +1469,7 @@ public class Editor extends JFrame implements RunnerListener {
   }
 
   public static boolean mruEnabled() {
-    return PreferencesData.getBoolean("editor.tabs.order.mru", false);
+    return false;//was returnigntrue even when field was not present in file! PreferencesData.getBoolean("editor.tabs.order.mru", false);
   }
 
   /**
@@ -1507,14 +1532,15 @@ public class Editor extends JFrame implements RunnerListener {
    */
   public void selectTab(final int index) {
     final EditorTab tab = tabs.get(index);
-    int newhead = mru.indexOf(tab);//will be moving to 0th location.
-    if(newhead!=0) {
-      if(newhead>0) {
-        mru.remove(newhead);
+    if(mruEnabled()) {
+      int newhead = mru.indexOf(tab);//will be moving to 0th location.
+      if (newhead != 0) {
+        if (newhead > 0) {
+          mru.remove(newhead);
+        }
+        mru.add(0, tab);//expedite building list.
       }
-      mru.add(0, tab);//expedite building list.
     }
-
     currentTabIndex = index;
     updateUndoRedoState();
     updateTitle();
@@ -1540,12 +1566,16 @@ public class Editor extends JFrame implements RunnerListener {
 
   /** make nth MRU entry current tab, should be same as tab order in tab bar*/
   public void selectMruTab(final int index) {
-    EditorTab thetab = mru.get(index);
-    if(thetab!=null ) {//mru is lazy init, might not have anything yet.
-      int trueindex = tabs.indexOf(thetab);
-      selectTab(trueindex);
+    if(mruEnabled()) {
+      EditorTab thetab = mru.get(index);
+      if (thetab != null) {//mru is lazy init, might not have anything yet.
+        int trueindex = tabs.indexOf(thetab);
+        selectTab(trueindex);
+      } else {
+        selectTab(0);//on error select main
+      }
     } else {
-      selectTab(0);//on error select main
+      selectTab(index);
     }
   }
 
@@ -1633,12 +1663,14 @@ public class Editor extends JFrame implements RunnerListener {
         .addDocumentListener(new DocumentTextChangeListener(
           this::updateUndoRedoState));
     tabs.add(tab);
+    mru.add(tab);//980f: how did it ever work before this was added? Comment about lazyinit follows point at which exception is thrown. That code seemed to expect nulls in the mru array
     reorderTabs();
   }
 
   protected void removeTab(SketchFile file) {
     int index = findTabIndex(file);
     tabs.remove(index);
+    //980f:todo: need to remove from mru as well
   }
 
 
@@ -2607,13 +2639,16 @@ public class Editor extends JFrame implements RunnerListener {
       final Finding finding = new Finding();
       finding.line = re.getCodeLine();
       finding.start = ~re.getCodeColumn();//~ is indication to setTab that this is from start of line vs start of file.
-      final EditorTab tab = tabs.get(findTabIndex(re.getCodeFile()));
-      finding.setTab(tab);
-      finding.end = finding.start + 20;//have to wait until setTab fixed up .start.
-      //add unique by tab instance and line number
-      int already=findings.indexOf(finding);
-      if(already<0) {
-        findings.add(finding);
+      SketchFile codefile=re.getCodeFile();
+      if(codefile!=null) {//linker errors don't have a sketch, nor are all of them actual errors.
+        final EditorTab tab = tabs.get(findTabIndex(re.getCodeFile()));
+        finding.setTab(tab);
+        finding.end = finding.start + 20;//have to wait until setTab fixed up .start.
+        //add unique by tab instance and line number
+        int already = findings.indexOf(finding);
+        if (already < 0) {
+          findings.add(finding);
+        }
       }
       //concurrent modification issues, need 'schedule once' SwingUtilities.invokeLater(()->errorView.refresh(findings));//compiler is probably on a different thread.
     }

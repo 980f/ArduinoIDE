@@ -18,7 +18,7 @@ documentation:
 # check that examples/01.basics/bareminimum... is documented as being the template for new sketches.
 
 bad things I did:
-# created singleton ref for Base rther than adding parameters to menu builder so that it could create lambdas that need it.
+# created singleton ref for Base rather than adding parameters to menu builder so that it could create lambdas that need it.
 
 
 commandline testing issues:
