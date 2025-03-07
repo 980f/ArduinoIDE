@@ -63,22 +63,7 @@ import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JSplitPane;
-import javax.swing.JTextArea;
-import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
-import javax.swing.TransferHandler;
+import javax.swing.*;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import javax.swing.text.BadLocationException;
@@ -201,9 +186,9 @@ public class Editor extends JFrame implements RunnerListener {
 
   private static JMenu portMenu;
 
-  /** since use is exclusive we replace the two objects with one and a mode based on concrete type
+  /** since use is exclusive we replace the two objects with one and a mode based on concrete type, until 1.8.20 lost us the base class we were using, AbstractTextMonitor
    * Note: there are three classes, the network monitor was exclusive to text, no reason for that other than poor factoring of code  */
-  static volatile AbstractTextMonitor serialMonitor;
+  static volatile AbstractMonitor serialMonitor;
 
   final EditorHeader header;
   EditorStatus status;
@@ -2132,13 +2117,6 @@ public class Editor extends JFrame implements RunnerListener {
    * Made synchronized to (hopefully) avoid problems of people
    * hitting export twice, quickly, and horking things up.
    */
-  /**
-   * Handles calling the export() function on sketch, and
-   * queues all the gui status stuff that comes along with it.
-   *
-   * Made synchronized to (hopefully) avoid problems of people
-   * hitting export twice, quickly, and horking things up.
-   */
   synchronized public void handleExport(final boolean usingProgrammer) {
     if (PreferencesData.getBoolean("editor.save_on_verify")) {
       if (sketch.isModified() && !sketchController.isReadOnly()) {
@@ -2290,7 +2268,7 @@ public class Editor extends JFrame implements RunnerListener {
     }
   }
   /** @returns whether a popup should actually pop-up */
-  public boolean onSerialMonitorChange(AbstractTextMonitor serialDisplay){
+  public boolean onSerialMonitorChange(AbstractMonitor serialDisplay){
     if (PreferencesData.getBoolean("editor.dock", false)) {
       if (!(serialDisplay instanceof SerialPlotter)) {//not yet ready to test plotter in window
         Component rootpanel = serialDisplay.popout.getComponent(0);

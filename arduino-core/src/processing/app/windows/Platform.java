@@ -23,6 +23,7 @@
 package processing.app.windows;
 
 //import cc.arduino.os.windows.Win32KnownFolders;
+import cc.arduino.os.windows.Win32KnownFolders;
 import processing.app.PreferencesData;
 import processing.app.legacy.PApplet;
 import processing.app.legacy.PConstants;

@@ -53,7 +53,7 @@ public class ContributedPlatformTableCellRenderer implements TableCellRenderer {
       cell.setBackground(new Color(255, 255, 255));
     }
 
-    int height = new Double(cell.getPreferredSize().getHeight()).intValue();
+    int height = cell.getPreferredSize().height;//kiss, desired field is accessible in desired type
     if (table.getRowHeight(row) < height) {
       table.setRowHeight(row, height);
     }

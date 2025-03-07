@@ -53,7 +53,7 @@ public class ContributedLibraryTableCellRenderer implements TableCellRenderer {
       cell.setBackground(new Color(255, 255, 255));
     }
 
-    int height = new Double(cell.getPreferredSize().getHeight()).intValue();//980f: weird way to get an int from an int
+    int height = cell.getPreferredSize().height;//980f: drop deprecated stuff making up for an error in 1.2!
     if (table.getRowHeight(row) < height) {
       table.setRowHeight(row, height);
     }

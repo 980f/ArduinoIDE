@@ -22,7 +22,7 @@
 */
 
 package processing.app;
-
+import java.util.function.Consumer;
 import static processing.app.I18n.tr;
 import static processing.app.Theme.scale;
 
@@ -43,11 +43,7 @@ import javax.swing.ToolTipManager;
 import javax.swing.border.MatteBorder;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Element;
-import javax.swing.text.PlainDocument;
-import javax.swing.text.DefaultCaret;
-import javax.swing.text.Document;
+import javax.swing.text.*;
 
 import org.apache.commons.lang3.StringUtils;
 import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;

@@ -100,7 +100,7 @@ public class FileDownloaderCache {
             .collect(Collectors.toMap(FileCached::getRemoteURL, Function.identity()))
           )
         );
-        log.info("Number of file already in the cache {}", cachedFiles.size());
+        //log.info("Number of file already in the cache {}", cachedFiles.size());
 
       }
     } catch (Exception e) {
@@ -167,14 +167,14 @@ public class FileDownloaderCache {
       try {
         connection.setRequestMethod("HEAD");
       } catch (ProtocolException e) {
-        log.error("Invalid protocol", e);
+        //log.error("Invalid protocol", e);
       }
     });
     final int responseCode = headRequest.getResponseCode();
     headRequest.disconnect();
     // Something bad is happening return a conservative true to try to download the file
     if (responseCode < 200 || responseCode >= 300) {
-      log.warn("The head request return a bad response code " + responseCode);
+      //log.warn("The head request return a bad response code " + responseCode);
       // if something bad happend
       return Optional.empty();
     }
@@ -186,7 +186,7 @@ public class FileDownloaderCache {
       final CacheControl cacheControl = CacheControl.valueOf(cacheControlHeader);
       return getNewFile.apply(remoteETagClean, cacheControl);
     }
-    log.warn("The head request do not return the ETag {} or the Cache-Control {}", remoteETag, cacheControlHeader);
+    //log.warn("The head request do not return the ETag {} or the Cache-Control {}", remoteETag, cacheControlHeader);
     return Optional.empty();
   }
 
@@ -205,7 +205,7 @@ public class FileDownloaderCache {
     if (Files.notExists(cachedFileInfo)) {
       Files.createDirectories(cachedFileInfo.getParent());
     }
-    log.info("Update cache file info in {}, number of cached files is {}", cachedFileInfo.toFile(), cachedFiles.size());
+    //log.info("Update cache file info in {}, number of cached files is {}", cachedFileInfo.toFile(), cachedFiles.size());
     // Write to cache.json
     mapper.writeValue(cachedFileInfo.toFile(), objectNode);
   }

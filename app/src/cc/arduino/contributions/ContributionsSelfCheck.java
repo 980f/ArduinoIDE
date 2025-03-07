@@ -162,7 +162,7 @@ public class ContributionsSelfCheck extends TimerTask implements NotificationPop
       ((UpdatableBoardsLibsFakeURLsHandler) hyperlinkListener).openBoardLibManager(new URL(link));
     }
       catch (Exception e){
-        LogManager.getLogger(ContributionsSelfCheck.class).warn("Exception while attempting to go to board manager", e);
+        //LogManager.getLogger(ContributionsSelfCheck.class).warn("Exception while attempting to go to board manager", e);
     }
   }
   // callback for boards button
