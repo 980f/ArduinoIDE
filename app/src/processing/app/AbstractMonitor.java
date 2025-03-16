@@ -15,6 +15,7 @@ public abstract class AbstractMonitor extends JFrame implements ActionListener {
 
   JFrame popout;
   private boolean closed;
+  protected boolean paused;
 
   private StringBuffer updateBuffer;
   private Timer updateTimer;
@@ -88,7 +89,7 @@ public abstract class AbstractMonitor extends JFrame implements ActionListener {
               suspend();
             }
           } else {
-            if (closed && !Editor.isUploading()) {
+            if (closed && !Editor.isUploading() && !paused) {
               resume(boardPort);
             }
           }

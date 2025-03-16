@@ -49,6 +49,7 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
   /** [980f] sometimes each keystroke is a command.*/
   protected boolean unbuffered;
   protected JCheckBox unbufferedBox;//[980F]
+  protected JCheckBox pauseit;//[980F]//allow external programs to access port
 
   protected JComboBox<String> lineEndings;
   protected JComboBox<String> serialRates;
@@ -134,7 +135,7 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
     autoscrollBox = new JCheckBox(tr("Autoscroll"), true);
     addTimeStampBox = new JCheckBox(tr("Show timestamp"), false);
     unbufferedBox=new JCheckBox(tr("Unbuffered"),PreferencesData.getBoolean("serial.unbuffered",false));
-
+    pauseit= new JCheckBox(tr("Pause"),false);
     noLineEndingAlert = new JLabel(I18n.format(tr("You've pressed {0} but nothing was sent. Should you select a line ending?"), tr("Send")));
     noLineEndingAlert.setToolTipText(noLineEndingAlert.getText());
     noLineEndingAlert.setForeground(pane.getBackground());
@@ -163,7 +164,22 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
     pane.add(addTimeStampBox);
     if(PreferencesData.has("serial.unbuffered")){//[980f]
       pane.add(unbufferedBox);
-      unbufferedBox.addActionListener(e -> unbuffered=unbufferedBox.isSelected());
+      unbufferedBox.addActionListener(e ->unbuffered = unbufferedBox.isSelected());
+      pane.add(pauseit);
+      pauseit.addActionListener(
+        (ActionEvent e)->{
+            try {
+              if (pauseit.isSelected()) {
+                close();
+                paused=true;
+              } else {
+                paused=false;
+                open();
+              }
+            } catch(Exception ex){
+//              throw new RuntimeException(ex);
+            }
+        });
     }
     pane.add(Box.createHorizontalGlue());
     pane.add(noLineEndingAlert);
@@ -207,6 +223,7 @@ public abstract class AbstractTextMonitor extends AbstractMonitor {
     autoscrollBox.setEnabled(enable);
     addTimeStampBox.setEnabled(enable);
     unbufferedBox.setEnabled(enable);
+    pauseit.setEnabled(enable);
     lineEndings.setEnabled(enable);
     serialRates.setEnabled(enable);
   }
